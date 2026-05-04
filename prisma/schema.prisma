@@ -1,0 +1,660 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// ─────────────────────────────────────────
+// ENUMS
+// ─────────────────────────────────────────
+
+enum TipoCatalogo {
+  VAREJO
+  ATACADO
+  FABRICA
+}
+
+enum PerfilUsuario {
+  ADMIN
+  GERENTE
+  VENDEDOR
+  ESTOQUISTA
+  AFILIADO
+}
+
+enum StatusAfiliado {
+  PENDENTE
+  APROVADO
+  REJEITADO
+  SUSPENSO
+}
+
+enum StatusPagamentoAfiliado {
+  PENDENTE
+  PAGO
+  CANCELADO
+}
+
+enum TipoSlugRef {
+  VENDEDOR
+  AFILIADO
+}
+
+enum TipoAfiliado {
+  VAREJO
+  ATACADO
+}
+
+enum TipoGrade {
+  LETRA   // P, M, G, GG, XGG
+  NUMERO  // 36, 38, 40, 42...
+}
+
+enum TipoPagamento {
+  VISTA  // pix, depósito
+  PRAZO  // cartão, boleto
+}
+
+enum StatusPedido {
+  PENDENTE
+  CONFIRMADO
+  SEPARANDO
+  ENVIADO
+  CONCLUIDO
+  CANCELADO
+}
+
+enum TipoMovimentacao {
+  ENTRADA
+  SAIDA
+  AJUSTE
+}
+
+enum TipoEnvio {
+  RETIRADA_LOJA
+  CORREIOS
+  EXCURSAO
+}
+
+enum TipoCupom {
+  PERCENTUAL    // desconto em %
+  VALOR_FIXO    // desconto em R$
+  FRETE_GRATIS  // zera o frete
+}
+
+enum StatusJob {
+  PENDENTE
+  PROCESSANDO
+  CONCLUIDO
+  ERRO
+}
+
+enum StatusLead {
+  ATIVO
+  BLOQUEADO
+}
+
+// ─────────────────────────────────────────
+// CONFIGURAÇÃO GERAL DO SISTEMA
+// ─────────────────────────────────────────
+
+model ConfiguracaoGeral {
+  id               String   @id @default(cuid())
+  taxaExcursao     Decimal  @default(5.00) @db.Decimal(10, 2)
+  qtdMinimaAtacado Int      @default(15)
+  qtdMinimaFabrica Int      @default(40)
+  // Barra de anúncio (Módulo 1)
+  anuncioBarAtivo  Boolean  @default(false)
+  anuncioBarTexto  String?  @default("Frete grátis na primeira compra · Envio para todo o Brasil")
+  // Webhook DataCrazy (Módulo 5)
+  webhookAtivo           Boolean @default(false)
+  webhookDataCrazyUrl    String?
+  webhookDataCrazyToken  String?
+  // Trabalhe Conosco
+  googleFormUrl    String?
+  atualizadoEm    DateTime @updatedAt
+}
+
+// ─────────────────────────────────────────
+// LOJAS FÍSICAS
+// ─────────────────────────────────────────
+
+model Loja {
+  id                   String   @id @default(cuid())
+  nome                 String
+  endereco             String?
+  cidade               String
+  horarioFuncionamento String?  // "Seg-Sex: 8h-18h | Sáb: 8h-12h"
+  ativo                Boolean  @default(true)
+  criadoEm            DateTime @default(now())
+  atualizadoEm        DateTime @updatedAt
+
+  pedidos    Pedido[]   @relation("LojaRetirada")
+  vendedores Vendedor[]
+}
+
+// ─────────────────────────────────────────
+// CUPONS DE DESCONTO
+// ─────────────────────────────────────────
+
+model Cupom {
+  id        String    @id @default(cuid())
+  codigo    String    @unique
+  tipo      TipoCupom
+  valor     Decimal?  @db.Decimal(10, 2) // % ou R$ (null para FRETE_GRATIS)
+  validade  DateTime?
+  usoMaximo Int?      // null = ilimitado
+  usoAtual  Int       @default(0)
+  ativo     Boolean   @default(true)
+  criadoEm DateTime  @default(now())
+
+  pedidos Pedido[]
+}
+
+// ─────────────────────────────────────────
+// USUÁRIOS (funcionários internos)
+// ─────────────────────────────────────────
+
+model Usuario {
+  id           String        @id @default(cuid())
+  nome         String
+  email        String        @unique
+  senha        String
+  perfil       PerfilUsuario
+  ativo        Boolean       @default(true)
+  criadoEm    DateTime      @default(now())
+  atualizadoEm DateTime     @updatedAt
+
+  vendedor           Vendedor?
+  afiliado           Afiliado?
+  movimentacoes      MovimentacaoEstoque[]
+  pedidosRegistrados Pedido[]              @relation("RegistradoPor")
+}
+
+// ─────────────────────────────────────────
+// VENDEDORES
+// URL: cavalheiro.fazagilizar.com.br/atacado?vendedor=wallyson
+// ─────────────────────────────────────────
+
+model Vendedor {
+  id        String   @id @default(cuid())
+  usuarioId String   @unique
+  usuario   Usuario  @relation(fields: [usuarioId], references: [id])
+  slug      String   @unique
+  telefone  String?  // WhatsApp: +5581998229477
+  lojaId    String?
+  loja      Loja?    @relation(fields: [lojaId], references: [id])
+  ativo     Boolean  @default(true)
+  criadoEm DateTime @default(now())
+
+  links   LinkVendedor[]
+  pedidos Pedido[]
+  visitas Visita[]
+}
+
+// ─────────────────────────────────────────
+// EXCURSÕES CADASTRADAS
+// ─────────────────────────────────────────
+
+model Excursao {
+  id                  String   @id @default(cuid())
+  nome                String
+  telefone            String?
+  estado              String?
+  cidadesAtendidas    String?  // texto livre: "Recife, Caruaru, Olinda"
+  nomeResponsavel     String?  // responsável por parcerias
+  telefoneResponsavel String?
+  cidade              String?  // cidade onde fica/estaciona
+  setor               String?
+  vaga                String?
+  pontoReferencia     String?
+  obs                 String?
+  ativo               Boolean  @default(true)
+  criadoEm           DateTime @default(now())
+  atualizadoEm       DateTime @updatedAt
+
+  pedidos Pedido[]
+}
+
+// ─────────────────────────────────────────
+// AFILIADOS
+// URL: cavalheiro.com.br/varejo?ref=lucas
+// ─────────────────────────────────────────
+
+model Afiliado {
+  id           String         @id @default(cuid())
+  usuarioId    String         @unique
+  usuario      Usuario        @relation(fields: [usuarioId], references: [id])
+  slug         String         @unique
+  telefone     String?
+  instagram    String?
+  cidade       String?
+  estado       String?
+  comoPromover String?
+  tipo         TipoAfiliado   @default(VAREJO)
+  nicho        String?
+  seguidores   String?
+  status       StatusAfiliado @default(PENDENTE)
+  ativo        Boolean        @default(true)
+  criadoEm    DateTime       @default(now())
+  atualizadoEm DateTime      @updatedAt
+
+  pedidos    Pedido[]
+  pagamentos PagamentoAfiliado[]
+  visitas    Visita[]
+}
+
+model PagamentoAfiliado {
+  id         String                  @id @default(cuid())
+  afiliadoId String
+  afiliado   Afiliado                @relation(fields: [afiliadoId], references: [id])
+  valor      Decimal                 @db.Decimal(10, 2)
+  periodo    String                  // "2026-04" (YYYY-MM)
+  qtdPedidos Int
+  status     StatusPagamentoAfiliado @default(PENDENTE)
+  obs        String?
+  criadoEm  DateTime                @default(now())
+  atualizadoEm DateTime             @updatedAt
+
+  @@unique([afiliadoId, periodo])
+}
+
+model LinkVendedor {
+  id         String       @id @default(cuid())
+  vendedorId String
+  vendedor   Vendedor     @relation(fields: [vendedorId], references: [id])
+  catalogo   TipoCatalogo
+  ativo      Boolean      @default(true)
+  criadoEm  DateTime     @default(now())
+
+  pedidos Pedido[]
+
+  @@unique([vendedorId, catalogo])
+}
+
+// ─────────────────────────────────────────
+// CLIENTES
+// ─────────────────────────────────────────
+
+model Cliente {
+  id           String       @id @default(cuid())
+  nome         String
+  documento    String?
+  email        String?      @unique
+  telefone     String?
+  endereco     String?
+  cidade       String?
+  estado       String?
+  tipo         TipoCatalogo
+  ativo        Boolean      @default(true)
+  criadoEm    DateTime     @default(now())
+  atualizadoEm DateTime    @updatedAt
+
+  // Rastreamento de slug (last-touch attribution)
+  slugAtual     String?
+  tipoSlugAtual TipoSlugRef?
+
+  pedidos  Pedido[]
+  slugLogs ClienteSlugLog[]
+}
+
+model ClienteSlugLog {
+  id        String      @id @default(cuid())
+  clienteId String
+  slug      String
+  tipo      TipoSlugRef
+  origem    String      // "url_ref" | "url_vendedor" | "cookie" | "cliente_salvo"
+  criadoEm DateTime    @default(now())
+  cliente   Cliente     @relation(fields: [clienteId], references: [id])
+}
+
+// ─────────────────────────────────────────
+// CONFIGURAÇÃO DOS CATÁLOGOS
+// ─────────────────────────────────────────
+
+model ConfiguracaoCatalogo {
+  id            String       @id @default(cuid())
+  catalogo      TipoCatalogo @unique
+  titulo        String
+  descricao     String?
+  logoUrl       String?
+  imagemCapa    String?
+  corPrimaria   String?
+  corSecundaria String?
+  atualizadoEm DateTime     @updatedAt
+}
+
+model Banner {
+  id            String       @id @default(cuid())
+  catalogo      TipoCatalogo
+  titulo        String?
+  subtitulo     String?
+  imagemUrl     String?      // legado — migrar para imagemDesktop
+  imagemDesktop String?      // 1920×500px
+  imagemTablet  String?      // 1024×450px
+  imagemMobile  String?      // 520×650px
+  videoUrl      String?      // YouTube URL (Shorts recomendado)
+  linkUrl       String?
+  ordem         Int          @default(0)
+  ativo         Boolean      @default(true)
+  criadoEm     DateTime     @default(now())
+}
+
+// ─────────────────────────────────────────
+// GRUPOS E SUBGRUPOS DE PRODUTO
+// Substitui Categoria com dois níveis
+// ─────────────────────────────────────────
+
+model Grupo {
+  id        String  @id @default(cuid())
+  nome      String  @unique
+  ativo     Boolean @default(true)
+  imagemUrl String?
+  bannerUrl String?
+
+  subGrupos SubGrupo[]
+  produtos  Produto[]
+}
+
+model SubGrupo {
+  id      String  @id @default(cuid())
+  grupoId String
+  grupo   Grupo   @relation(fields: [grupoId], references: [id])
+  nome    String
+  ativo   Boolean @default(true)
+
+  produtos Produto[]
+
+  @@unique([grupoId, nome])
+}
+
+// ─────────────────────────────────────────
+// GRADES DE TAMANHO
+// ─────────────────────────────────────────
+
+model Grade {
+  id   String    @id @default(cuid())
+  nome String    @unique
+  tipo TipoGrade
+
+  itens    GradeItem[]
+  produtos Produto[]
+}
+
+model GradeItem {
+  id      String @id @default(cuid())
+  gradeId String
+  grade   Grade  @relation(fields: [gradeId], references: [id])
+  valor   String // "P", "M", "G" ou "36", "38"
+  ordem   Int    @default(0)
+
+  variantes ProdutoVariante[]
+}
+
+// ─────────────────────────────────────────
+// PRODUTOS
+// Um cadastro único com 6 preços e grade associada
+// ─────────────────────────────────────────
+
+model Produto {
+  id         String    @id @default(cuid())
+  codigo     String    @unique
+  nome       String
+  descricao  String?
+  videoUrl          String?   // YouTube Shorts/vertical
+  imagemPrincipal   String?   // Foto de capa usada nas listagens
+  descricaoCompleta String?   // Descrição detalhada (composição, materiais etc.)
+  tabelaMedidas     String?   // URL da imagem com tabela de medidas
+  grupoId    String?
+  grupo      Grupo?    @relation(fields: [grupoId], references: [id])
+  subGrupoId String?
+  subGrupo   SubGrupo? @relation(fields: [subGrupoId], references: [id])
+  gradeId    String?
+  grade      Grade?    @relation(fields: [gradeId], references: [id])
+
+  // 6 preços: 3 tipos × à vista / a prazo
+  precoVarejoVista  Decimal @default(0) @db.Decimal(10, 2)
+  precoVarejoPrazo  Decimal @default(0) @db.Decimal(10, 2)
+  precoAtacadoVista Decimal @default(0) @db.Decimal(10, 2)
+  precoAtacadoPrazo Decimal @default(0) @db.Decimal(10, 2)
+  precoFabricaVista Decimal @default(0) @db.Decimal(10, 2)
+  precoFabricaPrazo Decimal @default(0) @db.Decimal(10, 2)
+  // Dimensões para cálculo de frete (Módulo 4)
+  pesoGramas    Int @default(300)
+  alturaCm      Int @default(5)
+  larguraCm     Int @default(20)
+  comprimentoCm Int @default(25)
+
+  ativo        Boolean  @default(true)
+  novidade     Boolean  @default(false)
+  oferta       Boolean  @default(false)
+  criadoEm    DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+
+  cores     ProdutoCor[]
+  variantes ProdutoVariante[]
+}
+
+// ─────────────────────────────────────────
+// VARIAÇÕES DE COR
+// ─────────────────────────────────────────
+
+model ProdutoCor {
+  id        String  @id @default(cuid())
+  produtoId String
+  produto   Produto @relation(fields: [produtoId], references: [id])
+  nome      String
+  hexCor    String?
+  ativo     Boolean @default(true)
+
+  imagens   ImagemProduto[]
+  variantes ProdutoVariante[]
+}
+
+model ImagemProduto {
+  id        String     @id @default(cuid())
+  corId     String
+  cor       ProdutoCor @relation(fields: [corId], references: [id])
+  url       String
+  principal Boolean    @default(false)
+  ordem     Int        @default(0)
+}
+
+// ─────────────────────────────────────────
+// VARIANTES (cor + tamanho)
+// ─────────────────────────────────────────
+
+model ProdutoVariante {
+  id          String     @id @default(cuid())
+  produtoId   String
+  produto     Produto    @relation(fields: [produtoId], references: [id])
+  corId       String
+  cor         ProdutoCor @relation(fields: [corId], references: [id])
+  gradeItemId String
+  gradeItem   GradeItem  @relation(fields: [gradeItemId], references: [id])
+  sku         String?    @unique
+  ativo       Boolean    @default(true)
+
+  estoque       Estoque?
+  movimentacoes MovimentacaoEstoque[]
+  itensPedido   ItemPedido[]
+
+  @@unique([corId, gradeItemId])
+}
+
+// ─────────────────────────────────────────
+// ESTOQUE
+// ─────────────────────────────────────────
+
+model Estoque {
+  id           String          @id @default(cuid())
+  varianteId   String          @unique
+  variante     ProdutoVariante @relation(fields: [varianteId], references: [id])
+  quantidade   Int             @default(0)
+  pendente     Int             @default(0)
+  atualizadoEm DateTime       @updatedAt
+}
+
+// ─────────────────────────────────────────
+// MOVIMENTAÇÃO DE ESTOQUE
+// ─────────────────────────────────────────
+
+model MovimentacaoEstoque {
+  id         String           @id @default(cuid())
+  varianteId String
+  variante   ProdutoVariante  @relation(fields: [varianteId], references: [id])
+  tipo       TipoMovimentacao
+  quantidade Int
+  pedidoId   String?
+  pedido     Pedido?          @relation(fields: [pedidoId], references: [id])
+  usuarioId  String
+  usuario    Usuario          @relation(fields: [usuarioId], references: [id])
+  obs             String?
+  // Campos adicionais para entrada/saída (Módulo 6)
+  fornecedor      String?
+  numeroDocumento String?
+  dataDocumento   DateTime?
+  criadoEm  DateTime         @default(now())
+}
+
+// ─────────────────────────────────────────
+// PEDIDOS
+// ─────────────────────────────────────────
+
+model Pedido {
+  id     String @id @default(cuid())
+  numero Int    @unique @default(autoincrement())
+
+  catalogo       TipoCatalogo
+  vendedorId     String?
+  vendedor       Vendedor?     @relation(fields: [vendedorId], references: [id])
+  linkVendedorId String?
+  linkVendedor   LinkVendedor? @relation(fields: [linkVendedorId], references: [id])
+
+  afiliadoId  String?
+  afiliado    Afiliado?  @relation(fields: [afiliadoId], references: [id])
+  excursaoId  String?
+  excursao    Excursao?  @relation(fields: [excursaoId], references: [id])
+
+  clienteId             String?
+  cliente               Cliente? @relation(fields: [clienteId], references: [id])
+  nomeClienteAvulso     String?
+  telefoneClienteAvulso String?
+
+  tipoEnvio      TipoEnvio
+  lojaRetiradaId String?
+  lojaRetirada   Loja?     @relation("LojaRetirada", fields: [lojaRetiradaId], references: [id])
+  // Excursão como texto livre — o cliente digita o nome da excursão
+  excursaoTexto   String?   // JSON com dados da excursão preenchidos pelo cliente
+  enderecoEntrega String?   // JSON com endereço de entrega Correios
+  valorFrete     Decimal   @default(0) @db.Decimal(10, 2)
+
+  cupomId  String?
+  cupom    Cupom?  @relation(fields: [cupomId], references: [id])
+  desconto Decimal @default(0) @db.Decimal(10, 2)
+
+  formaPagamento TipoPagamento
+  status         StatusPedido  @default(PENDENTE)
+  total          Decimal       @db.Decimal(10, 2)
+  obs            String?
+
+  registradoPorId String?
+  registradoPor   Usuario? @relation("RegistradoPor", fields: [registradoPorId], references: [id])
+
+  criadoEm    DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+
+  itens         ItemPedido[]
+  movimentacoes MovimentacaoEstoque[]
+}
+
+// ─────────────────────────────────────────
+// ITENS DO PEDIDO
+// ─────────────────────────────────────────
+
+model ItemPedido {
+  id            String          @id @default(cuid())
+  pedidoId      String
+  pedido        Pedido          @relation(fields: [pedidoId], references: [id])
+  varianteId    String
+  variante      ProdutoVariante @relation(fields: [varianteId], references: [id])
+  quantidade    Int
+  precoUnitario Decimal         @db.Decimal(10, 2)
+  subtotal      Decimal         @db.Decimal(10, 2)
+}
+
+// ─────────────────────────────────────────
+// VISITAS AO CATÁLOGO (analytics)
+// ─────────────────────────────────────────
+
+model Visita {
+  id         String       @id @default(cuid())
+  catalogo   TipoCatalogo
+  vendedorId String?
+  vendedor   Vendedor?    @relation(fields: [vendedorId], references: [id])
+  afiliadoId String?
+  afiliado   Afiliado?    @relation(fields: [afiliadoId], references: [id])
+  ip         String?
+  pais       String?
+  estado     String?
+  cidade     String?
+  criadoEm  DateTime     @default(now())
+}
+
+// ─────────────────────────────────────────
+// LEADS DE ATACADO/FÁBRICA
+// ─────────────────────────────────────────
+
+model LeadAtacado {
+  id        String       @id @default(cuid())
+  nome      String
+  telefone  String
+  instagram String?
+  catalogo  TipoCatalogo
+  ip        String?
+  estado    String?
+  status    StatusLead   @default(ATIVO)
+  criadoEm DateTime     @default(now())
+}
+
+// ─────────────────────────────────────────
+// CATÁLOGOS PDF (JOBS)
+// ─────────────────────────────────────────
+
+model CatalogoJob {
+  id          String    @id @default(cuid())
+  status      StatusJob @default(PENDENTE)
+  grupoId     String?
+  subGrupoId  String?
+  capaUrl     String?
+  tabelaPreco String    // VAREJO | ATACADO | FABRICA | SEM_PRECO
+  layout      String    // UMA_FOTO | TRES_FOTOS
+  pdfUrl      String?
+  erro        String?
+  criadoEm   DateTime  @default(now())
+  concluidoEm DateTime?
+}
+
+// ─────────────────────────────────────────
+// BLOG
+// ─────────────────────────────────────────
+
+model PostBlog {
+  id            String    @id @default(cuid())
+  titulo        String
+  slug          String    @unique
+  resumo        String?
+  conteudo      String    @db.Text
+  imagemCapa    String?
+  autor         String?   @default("Equipe Cavalheiro")
+  publicado     Boolean   @default(false)
+  destaque      Boolean   @default(false)
+  palavrasChave String?   // separadas por vírgula — para SEO
+  criadoEm      DateTime  @default(now())
+  publicadoEm   DateTime?
+  atualizadoEm  DateTime  @updatedAt
+}
