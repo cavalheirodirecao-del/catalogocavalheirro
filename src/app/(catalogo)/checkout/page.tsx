@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { formatarMoeda, gerarLinkWhatsApp } from "@/lib/utils";
 import { ItemCarrinho } from "@/components/catalogo/CartProvider";
@@ -14,6 +14,14 @@ const STORAGE_KEY = "cavalheiro_cart";
 const CIDADES_EXCURSAO = ["Caruaru", "Toritama", "Santa Cruz do Capibaribe"];
 
 export default function CheckoutPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-gray-50 flex items-center justify-center"><p className="text-gray-400">Carregando...</p></div>}>
+      <CheckoutContent />
+    </Suspense>
+  );
+}
+
+function CheckoutContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
 
