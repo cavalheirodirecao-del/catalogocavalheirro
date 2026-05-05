@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { writeFile, mkdir } from "fs/promises";
-import path from "path";
+import { createClient } from "@supabase/supabase-js";
+
+const supabase = createClient(
+  process.env.SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+);
 
 export async function POST(request: NextRequest) {
   const formData = await request.formData();
@@ -13,14 +17,18 @@ export async function POST(request: NextRequest) {
   const bytes = await file.arrayBuffer();
   const buffer = Buffer.from(bytes);
 
-  const uploadsDir = path.join(process.cwd(), "public", "uploads");
-  await mkdir(uploadsDir, { recursive: true });
-
   const ext = file.name.split(".").pop()?.toLowerCase() ?? "jpg";
   const filename = `${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
-  const filepath = path.join(uploadsDir, filename);
 
-  await writeFile(filepath, buffer);
+  const { error } = await supabase.storage
+    .from("uploads")
+    .upload(filename, buffer, { contentType: file.type, upsert: false });
 
-  return NextResponse.json({ url: `/uploads/${filename}` });
+  if (error) {
+    return NextResponse.json({ erro: error.message }, { status: 500 });
+  }
+
+  const { data } = supabase.storage.from("uploads").getPublicUrl(filename);
+
+  return NextResponse.json({ url: data.publicUrl });
 }

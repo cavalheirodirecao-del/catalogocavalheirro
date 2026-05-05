@@ -12,6 +12,7 @@
     "@hookform/resolvers": "^5.2.2",
     "@prisma/client": "^5.22.0",
     "@react-pdf/renderer": "^4.4.1",
+    "@supabase/supabase-js": "^2.105.3",
     "@tailwindcss/typography": "^0.5.19",
     "bcryptjs": "^3.0.3",
     "date-fns": "^4.1.0",
