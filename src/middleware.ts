@@ -2,7 +2,9 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { getToken } from "next-auth/jwt";
 
-const ROTAS_ADMIN = ["/dashboard", "/produtos", "/estoque", "/pedidos", "/clientes", "/vendedores", "/banners", "/relatorios", "/alcance", "/lojas", "/excursoes", "/cupons", "/configuracoes", "/afiliados"];
+const ROTAS_ADMIN = ["/dashboard", "/produtos", "/estoque", "/pedidos", "/clientes", "/vendedores", "/banners", "/relatorios", "/alcance", "/lojas", "/excursoes", "/cupons", "/configuracoes", "/afiliados", "/usuarios", "/minha-senha"];
+
+const ROTAS_VENDEDOR = ["/pedidos", "/minha-senha"];
 
 const CATALOGOS_VALIDOS = ["atacado", "varejo", "fabrica"] as const;
 
@@ -36,6 +38,15 @@ export async function middleware(request: NextRequest) {
     const token = await getToken({ req: request, secret: process.env.NEXTAUTH_SECRET });
     if (!token) {
       return NextResponse.redirect(new URL("/login", request.url));
+    }
+
+    if ((token as any).perfil === "VENDEDOR") {
+      const permitido = ROTAS_VENDEDOR.some(
+        (r) => pathname === r || pathname.startsWith(r + "/")
+      );
+      if (!permitido) {
+        return NextResponse.redirect(new URL("/pedidos", request.url));
+      }
     }
   }
 

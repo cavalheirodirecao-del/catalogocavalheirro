@@ -26,8 +26,9 @@ import {
   ChevronDown,
   Users2,
   Wallet,
+  KeyRound,
 } from "lucide-react";
-import { signOut } from "next-auth/react";
+import { signOut, useSession } from "next-auth/react";
 import { useState, useEffect } from "react";
 
 const menusSistema = [
@@ -60,6 +61,9 @@ const subItensProdutos = [
 
 export default function Sidebar() {
   const pathname = usePathname();
+  const { data: session } = useSession();
+  const perfil = (session?.user as any)?.perfil as string | undefined;
+  const isVendedor = perfil === "VENDEDOR";
 
   const produtosAtivo =
     pathname.startsWith("/produtos") ||
@@ -108,6 +112,16 @@ export default function Sidebar() {
       </div>
 
       <nav className="flex-1 px-3 py-4 space-y-1 overflow-auto">
+        {/* Vista simplificada para Vendedor */}
+        {isVendedor && (
+          <>
+            <MenuItem href="/pedidos" label="Pedidos" icon={ShoppingCart} />
+            <MenuItem href="/minha-senha" label="Minha Senha" icon={KeyRound} />
+          </>
+        )}
+
+        {/* Vista completa para Admin/Gerente/Estoquista */}
+        {!isVendedor && <>
         {/* Dashboard */}
         <MenuItem href="/dashboard" label="Dashboard" icon={LayoutDashboard} />
 
@@ -251,6 +265,9 @@ export default function Sidebar() {
         </div>
 
         {menusSistema.map((m) => <MenuItem key={m.href} {...m} />)}
+        <MenuItem href="/usuarios" label="Usuários" icon={Users} />
+        <MenuItem href="/minha-senha" label="Minha Senha" icon={KeyRound} />
+        </>}
       </nav>
 
       <div className="px-3 py-4 border-t border-white/10">
