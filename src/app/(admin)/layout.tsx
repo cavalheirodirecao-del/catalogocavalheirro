@@ -2,6 +2,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import Sidebar from "@/components/admin/Sidebar";
+import SessionWrapper from "@/components/admin/SessionWrapper";
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const session = await getServerSession(authOptions);
@@ -11,9 +12,11 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   }
 
   return (
-    <div className="flex min-h-screen bg-gray-50">
-      <Sidebar />
-      <main className="flex-1 p-6 overflow-auto">{children}</main>
-    </div>
+    <SessionWrapper session={session}>
+      <div className="flex min-h-screen bg-gray-50">
+        <Sidebar />
+        <main className="flex-1 p-6 overflow-auto">{children}</main>
+      </div>
+    </SessionWrapper>
   );
 }
