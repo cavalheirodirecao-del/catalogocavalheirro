@@ -1,12 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { getToken } from "next-auth/jwt";
 import prisma from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 
-export async function GET() {
-  const session = await getServerSession(authOptions);
-  if (!session) return NextResponse.json({ erro: "Não autorizado" }, { status: 401 });
+export async function GET(request: NextRequest) {
+  const token = await getToken({ req: request, secret: process.env.NEXTAUTH_SECRET });
+  if (!token) return NextResponse.json({ erro: "Não autorizado" }, { status: 401 });
 
   const usuarios = await prisma.usuario.findMany({
     where: { perfil: { not: "AFILIADO" } },
@@ -26,8 +25,8 @@ export async function GET() {
 }
 
 export async function POST(request: NextRequest) {
-  const session = await getServerSession(authOptions);
-  if (!session || (session.user as any).perfil !== "ADMIN") {
+  const token = await getToken({ req: request, secret: process.env.NEXTAUTH_SECRET });
+  if (!token || (token as any).perfil !== "ADMIN") {
     return NextResponse.json({ erro: "Não autorizado" }, { status: 401 });
   }
 

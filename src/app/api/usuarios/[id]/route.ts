@@ -1,11 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { getToken } from "next-auth/jwt";
 import prisma from "@/lib/prisma";
 
-export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
-  const session = await getServerSession(authOptions);
-  if (!session) return NextResponse.json({ erro: "Não autorizado" }, { status: 401 });
+export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
+  const token = await getToken({ req: request, secret: process.env.NEXTAUTH_SECRET });
+  if (!token) return NextResponse.json({ erro: "Não autorizado" }, { status: 401 });
 
   const usuario = await prisma.usuario.findUnique({
     where: { id: params.id },
@@ -24,8 +23,8 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
 }
 
 export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
-  const session = await getServerSession(authOptions);
-  if (!session || (session.user as any).perfil !== "ADMIN") {
+  const token = await getToken({ req: request, secret: process.env.NEXTAUTH_SECRET });
+  if (!token || (token as any).perfil !== "ADMIN") {
     return NextResponse.json({ erro: "Não autorizado" }, { status: 401 });
   }
 
@@ -39,9 +38,9 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
   return NextResponse.json({ ok: true, usuario });
 }
 
-export async function DELETE(_req: NextRequest, { params }: { params: { id: string } }) {
-  const session = await getServerSession(authOptions);
-  if (!session || (session.user as any).perfil !== "ADMIN") {
+export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
+  const token = await getToken({ req: request, secret: process.env.NEXTAUTH_SECRET });
+  if (!token || (token as any).perfil !== "ADMIN") {
     return NextResponse.json({ erro: "Não autorizado" }, { status: 401 });
   }
 
