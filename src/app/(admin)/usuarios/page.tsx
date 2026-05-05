@@ -36,10 +36,15 @@ export default function UsuariosPage() {
 
   async function carregar() {
     setCarregando(true);
-    const res = await fetch("/api/usuarios");
-    const data = await res.json();
-    setUsuarios(data);
-    setCarregando(false);
+    try {
+      const res = await fetch("/api/usuarios");
+      const data = await res.json();
+      setUsuarios(Array.isArray(data) ? data : []);
+    } catch {
+      setUsuarios([]);
+    } finally {
+      setCarregando(false);
+    }
   }
 
   useEffect(() => { carregar(); }, []);
