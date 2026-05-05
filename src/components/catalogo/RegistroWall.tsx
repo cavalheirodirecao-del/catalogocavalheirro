@@ -52,7 +52,7 @@ export default function RegistroWall({ catalogo, aberto, onClose, onAprovado }: 
     fetch(`/api/leads/${leadId}`)
       .then(r => r.json())
       .then(data => {
-        if (data.status === "ATIVO") { onAprovado(); }
+        if (data.status === "ATIVO") { setVerificando(false); onAprovado(); }
         else if (data.status === "BLOQUEADO") { setBloqueado(true); setVerificando(false); }
         else { localStorage.removeItem(STORAGE_KEY); setVerificando(false); }
       })
