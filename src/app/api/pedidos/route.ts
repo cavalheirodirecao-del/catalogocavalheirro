@@ -36,16 +36,12 @@ export async function POST(request: NextRequest) {
     refSlug,
   } = body;
 
+  // Localiza cupom sem incrementar ainda (o incremento vai dentro da transação)
   let cupomId: string | null = null;
+  let cupomEncontrado: { id: string } | null = null;
   if (cupomCodigo) {
-    const cupom = await prisma.cupom.findUnique({ where: { codigo: cupomCodigo } });
-    if (cupom) {
-      cupomId = cupom.id;
-      await prisma.cupom.update({
-        where: { id: cupom.id },
-        data: { usoAtual: { increment: 1 } },
-      });
-    }
+    cupomEncontrado = await prisma.cupom.findUnique({ where: { codigo: cupomCodigo } });
+    if (cupomEncontrado) cupomId = cupomEncontrado.id;
   }
 
   let linkVendedorId: string | null = null;
@@ -56,7 +52,6 @@ export async function POST(request: NextRequest) {
     linkVendedorId = link?.id ?? null;
   }
 
-  // Resolve refSlug → afiliado (last-touch attribution)
   let afiliadoId: string | null = null;
   let tipoSlugResolvido: "AFILIADO" | "VENDEDOR" | null = null;
   if (refSlug) {
@@ -71,43 +66,92 @@ export async function POST(request: NextRequest) {
     }
   }
 
-  const pedido = await prisma.pedido.create({
-    data: {
-      catalogo,
-      vendedorId: vendedorId || null,
-      linkVendedorId,
-      afiliadoId,
-      nomeClienteAvulso: nomeCliente,
-      telefoneClienteAvulso: telefoneCliente,
-      tipoEnvio,
-      lojaRetiradaId: lojaRetiradaId || null,
-      excursaoTexto: excursaoTexto || null,
-      enderecoEntrega: enderecoEntrega || null,
-      valorFrete,
-      cupomId,
-      desconto,
-      formaPagamento,
-      total,
-      obs: obs || null,
-      status: "PENDENTE",
-      itens: {
-        create: itens.map((i: any) => ({
-          varianteId: i.varianteId,
-          quantidade: i.quantidade,
-          precoUnitario: i.precoUnitario,
-          subtotal: i.subtotal,
-        })),
-      },
-    },
-  });
+  // Transação atômica: valida estoque → cria pedido → reserva pendente
+  let pedido;
+  try {
+    pedido = await prisma.$transaction(async (tx) => {
+      // 1. Verifica disponível para cada item
+      const varianteIds = itens.map((i: any) => i.varianteId);
+      const estoques = await tx.estoque.findMany({ where: { varianteId: { in: varianteIds } } });
 
-  // Reserva estoque (pendente) — o físico só é debitado ao confirmar o pedido
-  for (const item of itens) {
-    await prisma.estoque.upsert({
-      where: { varianteId: item.varianteId },
-      update: { pendente: { increment: item.quantidade } },
-      create: { varianteId: item.varianteId, quantidade: 0, pendente: item.quantidade },
+      const insuficientes = itens
+        .filter((item: any) => {
+          const e = estoques.find((e: any) => e.varianteId === item.varianteId);
+          return Math.max(0, (e?.quantidade ?? 0) - (e?.pendente ?? 0)) < item.quantidade;
+        })
+        .map((item: any) => {
+          const e = estoques.find((e: any) => e.varianteId === item.varianteId);
+          return {
+            varianteId: item.varianteId,
+            disponivel: Math.max(0, (e?.quantidade ?? 0) - (e?.pendente ?? 0)),
+            solicitado: item.quantidade,
+          };
+        });
+
+      if (insuficientes.length > 0) {
+        const err: any = new Error("ESTOQUE_INSUFICIENTE");
+        err.itensInsuficientes = insuficientes;
+        throw err;
+      }
+
+      // 2. Incrementa uso do cupom (dentro da transação para consistência)
+      if (cupomEncontrado) {
+        await tx.cupom.update({
+          where: { id: cupomEncontrado.id },
+          data: { usoAtual: { increment: 1 } },
+        });
+      }
+
+      // 3. Cria pedido + itens
+      const novoPedido = await tx.pedido.create({
+        data: {
+          catalogo,
+          vendedorId: vendedorId || null,
+          linkVendedorId,
+          afiliadoId,
+          nomeClienteAvulso: nomeCliente,
+          telefoneClienteAvulso: telefoneCliente,
+          tipoEnvio,
+          lojaRetiradaId: lojaRetiradaId || null,
+          excursaoTexto: excursaoTexto || null,
+          enderecoEntrega: enderecoEntrega || null,
+          valorFrete,
+          cupomId,
+          desconto,
+          formaPagamento,
+          total,
+          obs: obs || null,
+          status: "PENDENTE",
+          itens: {
+            create: itens.map((i: any) => ({
+              varianteId: i.varianteId,
+              quantidade: i.quantidade,
+              precoUnitario: i.precoUnitario,
+              subtotal: i.subtotal,
+            })),
+          },
+        },
+      });
+
+      // 4. Reserva estoque (pendente) — físico só debita ao confirmar pedido
+      for (const item of itens) {
+        await tx.estoque.upsert({
+          where: { varianteId: item.varianteId },
+          update: { pendente: { increment: item.quantidade } },
+          create: { varianteId: item.varianteId, quantidade: 0, pendente: item.quantidade },
+        });
+      }
+
+      return novoPedido;
     });
+  } catch (err: any) {
+    if (err?.message === "ESTOQUE_INSUFICIENTE") {
+      return NextResponse.json(
+        { erro: "Estoque insuficiente para alguns itens.", itensInsuficientes: err.itensInsuficientes },
+        { status: 409 }
+      );
+    }
+    throw err;
   }
 
   // Atualiza slugAtual no Cliente por telefone (fire-and-forget)

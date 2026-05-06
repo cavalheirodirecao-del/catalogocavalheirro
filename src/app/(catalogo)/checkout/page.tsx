@@ -84,6 +84,7 @@ function CheckoutContent() {
   const [vendedorId, setVendedorId] = useState(vendedorParam ?? "");
   const [obs, setObs] = useState("");
   const [enviando, setEnviando] = useState(false);
+  const [erroEnvio, setErroEnvio] = useState("");
   const [pedidoCriado, setPedidoCriado] = useState<{ numero: number; whatsappUrl: string } | null>(null);
 
   useEffect(() => {
@@ -191,6 +192,7 @@ function CheckoutContent() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setEnviando(true);
+    setErroEnvio("");
 
     const vendedorSelecionado = vendedores.find(v => v.id === vendedorId || v.slug === vendedorParam);
 
@@ -234,6 +236,23 @@ function CheckoutContent() {
 
     const res = await fetch("/api/pedidos", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
     const data = await res.json();
+
+    if (!res.ok) {
+      if (res.status === 409 && data.itensInsuficientes) {
+        const msgs = (data.itensInsuficientes as any[]).map((it: any) => {
+          const itemCarrinho = itens.find(i => i.varianteId === it.varianteId);
+          const nome = itemCarrinho
+            ? `${itemCarrinho.produtoNome} (${itemCarrinho.corNome}, ${itemCarrinho.tamanho})`
+            : "Item";
+          return `${nome}: máximo ${it.disponivel} ${it.disponivel === 1 ? "unidade disponível" : "unidades disponíveis"}, você pediu ${it.solicitado}`;
+        });
+        setErroEnvio(msgs.join("\n"));
+      } else {
+        setErroEnvio(data.erro ?? "Erro ao criar pedido. Tente novamente.");
+      }
+      setEnviando(false);
+      return;
+    }
 
     if (data.numero) {
       const loja = lojas.find(l => l.id === lojaId);
@@ -576,6 +595,12 @@ function CheckoutContent() {
             <p className="text-xs text-gray-400 text-right">Preço a prazo aplicado</p>
           )}
         </div>
+
+        {erroEnvio && (
+          <div className="bg-red-50 border border-red-200 text-red-700 rounded-xl px-4 py-3 text-sm whitespace-pre-line">
+            {erroEnvio}
+          </div>
+        )}
 
         <button type="submit" disabled={enviando || itens.length === 0}
           className="w-full bg-black text-white rounded-xl py-4 font-bold text-base hover:bg-gray-800 transition disabled:opacity-40">

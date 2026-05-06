@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ShoppingCart, X, Minus, Plus, ChevronLeft, ChevronRight, Play, Ruler, ZoomIn } from "lucide-react";
 import { CartProvider, useCart } from "./CartProvider";
 import ProdutosSimilares from "./ProdutosSimilares";
@@ -133,6 +133,16 @@ function VarejoDetalheInner({ produto, similares }: Omit<Props, "vendedorSlug" |
   const variantesDisponiveis = corSelecionada?.variantes
     .filter(v => Math.max(0, (v.estoque?.quantidade ?? 0) - (v.estoque?.pendente ?? 0)) > 0)
     .sort((a, b) => a.gradeItem.ordem - b.gradeItem.ordem) ?? [];
+
+  const disponivel = tamSelecionado
+    ? Math.max(0, (tamSelecionado.estoque?.quantidade ?? 0) - (tamSelecionado.estoque?.pendente ?? 0))
+    : 0;
+
+  useEffect(() => {
+    if (tamSelecionado && disponivel > 0) {
+      setQuantidade(q => Math.min(q, disponivel));
+    }
+  }, [tamSelecionado]);
 
   function handleAdicionar() {
     if (!tamSelecionado) return;
@@ -284,11 +294,18 @@ function VarejoDetalheInner({ produto, similares }: Omit<Props, "vendedorSlug" |
                 <Minus size={14} />
               </button>
               <span className="w-8 text-center font-bold text-lg">{quantidade}</span>
-              <button onClick={() => setQuantidade(q => q + 1)}
-                className="w-9 h-9 rounded-lg border border-gray-200 flex items-center justify-center hover:bg-gray-50 transition">
+              <button
+                onClick={() => setQuantidade(q => tamSelecionado ? Math.min(disponivel, q + 1) : q + 1)}
+                disabled={tamSelecionado !== null && quantidade >= disponivel}
+                className="w-9 h-9 rounded-lg border border-gray-200 flex items-center justify-center hover:bg-gray-50 transition disabled:opacity-30 disabled:cursor-not-allowed">
                 <Plus size={14} />
               </button>
             </div>
+            {tamSelecionado && disponivel > 0 && quantidade >= disponivel && (
+              <p className="text-xs text-orange-500 mt-2">
+                Máximo para pronta entrega: {disponivel} {disponivel === 1 ? "unidade" : "unidades"}
+              </p>
+            )}
           </div>
 
           {/* Botão comprar */}

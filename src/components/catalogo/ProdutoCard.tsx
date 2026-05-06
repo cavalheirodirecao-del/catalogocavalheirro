@@ -8,7 +8,7 @@ import Link from "next/link";
 interface Variante {
   id: string;
   gradeItem: { valor: string; ordem: number };
-  estoque: { quantidade: number } | null;
+  estoque: { quantidade: number; pendente: number } | null;
 }
 
 interface Cor {
@@ -182,7 +182,7 @@ export default function ProdutoCard({ produto, catalogo, pathCatalogo, precoVisi
 
   // Modo varejo inline
   const variantesDisponiveis = corSelecionada?.variantes
-    .filter((v) => (v.estoque?.quantidade ?? 0) > 0)
+    .filter((v) => Math.max(0, (v.estoque?.quantidade ?? 0) - (v.estoque?.pendente ?? 0)) > 0)
     .sort((a, b) => a.gradeItem.ordem - b.gradeItem.ordem) ?? [];
 
   function handleSelectCor(cor: Cor) {
