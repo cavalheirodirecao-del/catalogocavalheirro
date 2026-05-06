@@ -9,7 +9,7 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
     return NextResponse.json({ erro: "Não autorizado" }, { status: 401 });
   }
 
-  const senhaHash = await bcrypt.hash("12345678", 10);
+  const senhaHash = await bcrypt.hash("12345678", 8);
 
   await prisma.usuario.update({
     where: { id: params.id },

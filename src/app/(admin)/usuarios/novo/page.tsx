@@ -25,21 +25,26 @@ export default function NovoUsuarioPage() {
     setSalvando(true);
     setErro("");
 
-    const res = await fetch("/api/usuarios", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ nome, email, senha, perfil }),
-    });
+    try {
+      const res = await fetch("/api/usuarios", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ nome, email, senha, perfil }),
+      });
 
-    const data = await res.json();
-    setSalvando(false);
+      const data = await res.json();
 
-    if (!res.ok) {
-      setErro(data.erro ?? "Erro ao criar usuário.");
-      return;
+      if (!res.ok) {
+        setErro(data.erro ?? "Erro ao criar usuário.");
+        return;
+      }
+
+      router.push("/usuarios");
+    } catch {
+      setErro("Erro de conexão. Tente novamente.");
+    } finally {
+      setSalvando(false);
     }
-
-    router.push("/usuarios");
   }
 
   const inputCls = "w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black";
