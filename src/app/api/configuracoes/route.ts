@@ -1,9 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getToken } from "next-auth/jwt";
 import { prisma } from "@/lib/prisma";
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   const config = await prisma.configuracaoGeral.findFirst();
   if (!config) return NextResponse.json(null);
+
+  const token = await getToken({ req: request, secret: process.env.NEXTAUTH_SECRET });
+  const isAdmin = (token as any)?.perfil === "ADMIN";
+
   return NextResponse.json({
     taxaExcursao: Number(config.taxaExcursao),
     qtdMinimaAtacado: config.qtdMinimaAtacado,
@@ -11,12 +16,17 @@ export async function GET() {
     anuncioBarAtivo: config.anuncioBarAtivo,
     anuncioBarTexto: config.anuncioBarTexto,
     webhookAtivo: config.webhookAtivo,
-    webhookDataCrazyUrl: config.webhookDataCrazyUrl,
-    webhookDataCrazyToken: config.webhookDataCrazyToken,
+    webhookDataCrazyUrl: isAdmin ? config.webhookDataCrazyUrl : undefined,
+    webhookDataCrazyToken: isAdmin ? config.webhookDataCrazyToken : undefined,
   });
 }
 
 export async function POST(request: NextRequest) {
+  const token = await getToken({ req: request, secret: process.env.NEXTAUTH_SECRET });
+  if (!token || (token as any).perfil !== "ADMIN") {
+    return NextResponse.json({ erro: "Não autorizado" }, { status: 401 });
+  }
+
   const body = await request.json();
   const {
     taxaExcursao, qtdMinimaAtacado, qtdMinimaFabrica,

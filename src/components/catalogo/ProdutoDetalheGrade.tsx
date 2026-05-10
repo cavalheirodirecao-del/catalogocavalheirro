@@ -121,7 +121,7 @@ function DetalheInner({ produto, catalogo, pathCatalogo, qtdMinima, similares }:
   // Galeria: tabs foto / vídeo
   type Tab = "foto" | "video";
   const [tab, setTab] = useState<Tab>("foto");
-  const [corGaleria, setCorGaleria] = useState<Cor>(produto.cores[0]);
+  const [corGaleria, setCorGaleria] = useState<Cor | null>(produto.cores[0] ?? null);
   const [fotoIdx, setFotoIdx] = useState(0);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [mostrarTabela, setMostrarTabela] = useState(false);

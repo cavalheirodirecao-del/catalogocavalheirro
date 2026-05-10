@@ -1,9 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getToken } from "next-auth/jwt";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 
 // GET /api/afiliados/[id] — detalhe admin
-export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
+  const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
+  if (!token) return NextResponse.json({ erro: "Não autorizado" }, { status: 401 });
+
   const afiliado = await prisma.afiliado.findUnique({
     where: { id: params.id },
     include: {
@@ -28,14 +32,17 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
 
 // PATCH /api/afiliados/[id] — gestão admin (status, dados, senha)
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
+  const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
+  if (!token || (token as any).perfil !== "ADMIN") {
+    return NextResponse.json({ erro: "Não autorizado" }, { status: 401 });
+  }
+
   const body = await req.json();
   const {
     status,
     slug, telefone, instagram, cidade, estado, comoPromover,
     nicho, seguidores, tipo,
-    // edição do Usuario
     nome, email,
-    // reset de senha
     novaSenha,
   } = body;
 
@@ -58,13 +65,11 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
       include: { usuario: true },
     });
 
-    // Dados do Usuario (nome, email, senha, ativo)
     const usuarioData: any = {};
     if (nome !== undefined) usuarioData.nome = nome.trim();
     if (email !== undefined) usuarioData.email = email.trim().toLowerCase();
-    if (novaSenha) usuarioData.senha = await bcrypt.hash(novaSenha, 10);
+    if (novaSenha) usuarioData.senha = await bcrypt.hash(novaSenha, 8);
 
-    // Sincroniza ativo com status
     if (status !== undefined) {
       usuarioData.ativo = status === "APROVADO";
     }

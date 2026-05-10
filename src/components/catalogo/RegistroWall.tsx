@@ -56,7 +56,7 @@ export default function RegistroWall({ catalogo, aberto, onClose, onAprovado }: 
         else if (data.status === "BLOQUEADO") { setBloqueado(true); setVerificando(false); }
         else { localStorage.removeItem(STORAGE_KEY); setVerificando(false); }
       })
-      .catch(() => { onAprovado(); });
+      .catch(() => { setVerificando(false); });
   }, []);
 
   async function handleLogin(e: React.FormEvent) {

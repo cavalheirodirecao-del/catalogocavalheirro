@@ -81,7 +81,7 @@ export default function NovoUsuarioPage() {
 
         <div>
           <label className={labelCls}>Senha inicial *</label>
-          <input required value={senha} onChange={e => setSenha(e.target.value)} className={inputCls} />
+          <input required type="password" value={senha} onChange={e => setSenha(e.target.value)} className={inputCls} />
           <p className="text-xs text-gray-400 mt-1">O usuário poderá alterar em "Minha Senha" após o login.</p>
         </div>
 

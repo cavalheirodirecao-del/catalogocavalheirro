@@ -103,7 +103,7 @@ function VarejoDetalheInner({ produto, similares }: Omit<Props, "vendedorSlug" |
 
   type Tab = "foto" | "video";
   const [tab, setTab] = useState<Tab>("foto");
-  const [corSelecionada, setCorSelecionada] = useState<Cor>(produto.cores[0]);
+  const [corSelecionada, setCorSelecionada] = useState<Cor | null>(produto.cores[0] ?? null);
   const [fotoIdx, setFotoIdx] = useState(0);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [tamSelecionado, setTamSelecionado] = useState<Variante | null>(null);
@@ -145,7 +145,7 @@ function VarejoDetalheInner({ produto, similares }: Omit<Props, "vendedorSlug" |
   }, [tamSelecionado]);
 
   function handleAdicionar() {
-    if (!tamSelecionado) return;
+    if (!tamSelecionado || !corSelecionada) return;
     const img = corSelecionada.imagens.find(i => i.principal)?.url ?? corSelecionada.imagens[0]?.url ?? produto.imagemPrincipal ?? IMG_PADRAO;
     adicionar({
       varianteId: tamSelecionado.id,

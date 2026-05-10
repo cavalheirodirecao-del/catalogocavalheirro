@@ -26,7 +26,7 @@ export async function middleware(request: NextRequest) {
     if (!token || (token as any).perfil !== "AFILIADO") {
       const res = NextResponse.redirect(new URL("/afiliados/login", request.url));
       if (slugRef) {
-        res.cookies.set("_ref", slugRef, { maxAge: 60 * 60 * 24 * 7, path: "/", sameSite: "lax", httpOnly: false });
+        res.cookies.set("_ref", slugRef, { maxAge: 60 * 60 * 24 * 7, path: "/", sameSite: "lax", httpOnly: true });
       }
       return res;
     }
@@ -60,7 +60,7 @@ export async function middleware(request: NextRequest) {
   // Se há slug de rastreamento na URL, seta cookie e retorna
   if (slugRef) {
     const res = NextResponse.next();
-    res.cookies.set("_ref", slugRef, { maxAge: 60 * 60 * 24 * 7, path: "/", sameSite: "lax", httpOnly: false });
+    res.cookies.set("_ref", slugRef, { maxAge: 60 * 60 * 24 * 7, path: "/", sameSite: "lax", httpOnly: true });
     res.headers.set("x-catalogo", catalogo);
     res.headers.set("x-pathname", pathname);
     return res;
