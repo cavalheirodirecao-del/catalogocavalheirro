@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getToken } from "next-auth/jwt";
 import { prisma } from "@/lib/prisma";
 import { gerarSlugAfiliado } from "@/lib/afiliados";
 import bcrypt from "bcryptjs";
@@ -45,8 +46,14 @@ export async function POST(req: NextRequest) {
 
   const senhaHash = await bcrypt.hash(senha, 10);
 
-  // adminCreate=true: cadastro direto pelo admin, já aprovado
+  // adminCreate=true: cadastro direto pelo admin, já aprovado — exige token ADMIN
   const adminCreate = body.adminCreate === true;
+  if (adminCreate) {
+    const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
+    if (!token || (token as any).perfil !== "ADMIN") {
+      return NextResponse.json({ erro: "Não autorizado." }, { status: 401 });
+    }
+  }
 
   const afiliado = await prisma.$transaction(async (tx) => {
     const usuario = await tx.usuario.create({

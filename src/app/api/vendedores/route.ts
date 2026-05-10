@@ -1,8 +1,12 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
+import { getToken } from "next-auth/jwt";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 
-export async function GET() {
+export async function GET(req: NextRequest) {
+  const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
+  if (!token) return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
+
   const vendedores = await prisma.vendedor.findMany({
     include: { usuario: true, links: true },
     orderBy: { usuario: { nome: "asc" } },
@@ -10,7 +14,12 @@ export async function GET() {
   return NextResponse.json(vendedores);
 }
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
+  const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
+  if (!token || (token as any).perfil !== "ADMIN") {
+    return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
+  }
+
   try {
     const body = await req.json();
     const { nome, email, senha, telefone, slug, lojaId, catalogos } = body;
@@ -19,7 +28,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Campos obrigatórios: nome, email, senha, slug" }, { status: 400 });
     }
 
-    const senhaHash = await bcrypt.hash(senha, 10);
+    const senhaHash = await bcrypt.hash(senha, 8);
 
     const vendedor = await prisma.$transaction(async (tx) => {
       const usuario = await tx.usuario.create({
