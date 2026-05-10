@@ -1,11 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { getToken } from "next-auth/jwt";
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const admin = searchParams.get("admin") === "1";
+
+  if (admin) {
+    const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
+    if (!token) return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
+  }
 
   const posts = await prisma.postBlog.findMany({
     where: admin ? {} : { publicado: true },
@@ -29,8 +33,8 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user) return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
+  const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
+  if (!token) return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
 
   const body = await req.json();
   const { titulo, slug, resumo, conteudo, imagemCapa, autor, publicado, destaque, palavrasChave } = body;
@@ -42,7 +46,7 @@ export async function POST(req: NextRequest) {
   const post = await prisma.postBlog.create({
     data: {
       titulo,
-      slug: slug.toLowerCase().replace(/[^a-z0-9-]/g, "-").replace(/-+/g, "-"),
+      slug: slug.toLowerCase().replace(/[^a-z0-9-]/g, "-").replace(/-+/g, "-").replace(/^-|-$/g, ""),
       resumo: resumo || null,
       conteudo,
       imagemCapa: imagemCapa || null,

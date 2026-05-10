@@ -19,6 +19,7 @@ export async function dispararWebhook(evento: EventoWebhook, pedido: PedidoWebho
   try {
     const config = await prisma.configuracaoGeral.findFirst();
     if (!config?.webhookAtivo || !config?.webhookDataCrazyUrl) return;
+    if (!config.webhookDataCrazyUrl.startsWith("https://")) return;
 
     const payload = {
       evento,

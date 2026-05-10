@@ -6,6 +6,9 @@ import bcrypt from "bcryptjs";
 
 // GET /api/afiliados — listagem admin
 export async function GET(req: NextRequest) {
+  const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
+  if (!token) return NextResponse.json({ erro: "Não autorizado" }, { status: 401 });
+
   const { searchParams } = new URL(req.url);
   const status = searchParams.get("status");
 

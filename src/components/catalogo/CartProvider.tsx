@@ -62,7 +62,11 @@ export function CartProvider({
 
   function salvar(novosItens: ItemCarrinho[]) {
     itensRef.current = novosItens;
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({ catalogo, itens: novosItens }));
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({ catalogo, itens: novosItens }));
+    } catch {
+      // quota excedida — estado em memória continua válido
+    }
     setItens(novosItens);
   }
 

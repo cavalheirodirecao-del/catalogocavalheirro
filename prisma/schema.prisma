@@ -300,6 +300,8 @@ model Cliente {
 
   pedidos  Pedido[]
   slugLogs ClienteSlugLog[]
+
+  @@index([telefone])
 }
 
 model ClienteSlugLog {
@@ -570,6 +572,12 @@ model Pedido {
 
   itens         ItemPedido[]
   movimentacoes MovimentacaoEstoque[]
+
+  @@index([status])
+  @@index([catalogo])
+  @@index([vendedorId])
+  @@index([afiliadoId])
+  @@index([criadoEm])
 }
 
 // ─────────────────────────────────────────
