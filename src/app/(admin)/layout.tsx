@@ -4,6 +4,8 @@ import { redirect } from "next/navigation";
 import Sidebar from "@/components/admin/Sidebar";
 import SessionWrapper from "@/components/admin/SessionWrapper";
 
+export const dynamic = "force-dynamic";
+
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const session = await getServerSession(authOptions);
 
