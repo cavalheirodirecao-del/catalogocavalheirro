@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import LookbookClient from "@/components/lookbook/LookbookClient";
 
-export const revalidate = 60; // revalida a cada 60s
+export const dynamic = "force-dynamic";
 
 export default async function LookbookPage() {
   const produtos = await prisma.produto.findMany({

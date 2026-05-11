@@ -2,6 +2,8 @@ import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 
+export const dynamic = "force-dynamic";
+
 export default async function RevendedoresPage() {
   // Busca capas, produtos e configuração em paralelo
   const [configuracoes, produtos, configGeral] = await Promise.all([
