@@ -115,7 +115,12 @@ model ConfiguracaoGeral {
   webhookDataCrazyUrl    String?
   webhookDataCrazyToken  String?
   // Trabalhe Conosco
-  googleFormUrl    String?
+  googleFormUrl         String?
+  fotoTrabalhoFabrica1  String?
+  fotoTrabalhoFabrica2  String?
+  fotoTrabalhoEquipe    String?
+  fotoTrabalhoShowroom1 String?
+  fotoTrabalhoShowroom2 String?
   atualizadoEm    DateTime @updatedAt
 }
 

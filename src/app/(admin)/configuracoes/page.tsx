@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { formatarMoeda } from "@/lib/utils";
-import { Megaphone, Webhook, FileText } from "lucide-react";
+import { Megaphone, Webhook, FileText, ImageIcon, Upload } from "lucide-react";
 
 export default function ConfiguracoesPage() {
   const [taxaExcursao, setTaxaExcursao] = useState("5.00");
@@ -17,6 +17,13 @@ export default function ConfiguracoesPage() {
   const [webhookToken, setWebhookToken] = useState("");
 
   const [googleFormUrl, setGoogleFormUrl] = useState("");
+
+  const [fotoFabrica1, setFotoFabrica1] = useState("");
+  const [fotoFabrica2, setFotoFabrica2] = useState("");
+  const [fotoEquipe, setFotoEquipe] = useState("");
+  const [fotoShowroom1, setFotoShowroom1] = useState("");
+  const [fotoShowroom2, setFotoShowroom2] = useState("");
+  const [uploadandoFoto, setUploadandoFoto] = useState<string | null>(null);
 
   const [salvando, setSalvando] = useState(false);
   const [mensagem, setMensagem] = useState("");
@@ -35,6 +42,11 @@ export default function ConfiguracoesPage() {
           setWebhookUrl(data.webhookDataCrazyUrl ?? "");
           setWebhookToken(data.webhookDataCrazyToken ?? "");
           setGoogleFormUrl(data.googleFormUrl ?? "");
+          setFotoFabrica1(data.fotoTrabalhoFabrica1 ?? "");
+          setFotoFabrica2(data.fotoTrabalhoFabrica2 ?? "");
+          setFotoEquipe(data.fotoTrabalhoEquipe ?? "");
+          setFotoShowroom1(data.fotoTrabalhoShowroom1 ?? "");
+          setFotoShowroom2(data.fotoTrabalhoShowroom2 ?? "");
         }
       });
   }, []);
@@ -57,12 +69,27 @@ export default function ConfiguracoesPage() {
         webhookDataCrazyUrl: webhookUrl || null,
         webhookDataCrazyToken: webhookToken || null,
         googleFormUrl: googleFormUrl || null,
+        fotoTrabalhoFabrica1: fotoFabrica1 || null,
+        fotoTrabalhoFabrica2: fotoFabrica2 || null,
+        fotoTrabalhoEquipe: fotoEquipe || null,
+        fotoTrabalhoShowroom1: fotoShowroom1 || null,
+        fotoTrabalhoShowroom2: fotoShowroom2 || null,
       }),
     });
 
     setSalvando(false);
     setMensagem("Configurações salvas com sucesso!");
     setTimeout(() => setMensagem(""), 3000);
+  }
+
+  async function uploadFoto(file: File, setter: (url: string) => void, chave: string) {
+    setUploadandoFoto(chave);
+    const form = new FormData();
+    form.append("file", file);
+    const res = await fetch("/api/upload", { method: "POST", body: form });
+    const json = await res.json();
+    if (json.url) setter(json.url);
+    setUploadandoFoto(null);
   }
 
   const inputCls = "w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black";
@@ -218,6 +245,71 @@ export default function ConfiguracoesPage() {
               Use o link de incorporação (Incorporar → copiar URL do iframe).
             </p>
           </div>
+        </div>
+
+        {/* Fotos — Trabalhe Conosco */}
+        <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5 space-y-4">
+          <div className="flex items-center gap-2">
+            <ImageIcon size={16} className="text-gray-400" />
+            <h2 className="font-semibold">Fotos — Trabalhe Conosco</h2>
+          </div>
+          <p className="text-xs text-gray-400">
+            Imagens exibidas na seção "Nossa Fábrica" da página Trabalhe Conosco.
+            Cole uma URL ou faça upload de um arquivo.
+          </p>
+
+          {[
+            { label: "Fábrica — Foto 1", val: fotoFabrica1, set: setFotoFabrica1, chave: "f1" },
+            { label: "Fábrica — Foto 2", val: fotoFabrica2, set: setFotoFabrica2, chave: "f2" },
+            { label: "Nossa Equipe",     val: fotoEquipe,   set: setFotoEquipe,   chave: "eq" },
+            { label: "Showroom — Foto 1",val: fotoShowroom1,set: setFotoShowroom1,chave: "s1" },
+            { label: "Showroom — Foto 2",val: fotoShowroom2,set: setFotoShowroom2,chave: "s2" },
+          ].map(({ label, val, set, chave }) => (
+            <div key={chave} className="flex items-center gap-3 border border-gray-100 rounded-lg p-3">
+              {/* Preview */}
+              <div className="w-20 h-14 rounded-md overflow-hidden bg-gray-100 shrink-0 border border-gray-200">
+                {val ? (
+                  <img src={val} alt={label} className="w-full h-full object-cover" />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center">
+                    <ImageIcon size={16} className="text-gray-300" />
+                  </div>
+                )}
+              </div>
+
+              {/* Input URL + Upload */}
+              <div className="flex-1 space-y-1.5">
+                <p className="text-xs font-medium text-gray-600">{label}</p>
+                <div className="flex gap-2">
+                  <input
+                    type="url"
+                    value={val}
+                    onChange={e => set(e.target.value)}
+                    placeholder="https://..."
+                    className="flex-1 border border-gray-200 rounded-lg px-2.5 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-black"
+                  />
+                  <label className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium cursor-pointer transition whitespace-nowrap ${
+                    uploadandoFoto === chave
+                      ? "bg-gray-100 text-gray-400"
+                      : "bg-gray-900 text-white hover:bg-gray-700"
+                  }`}>
+                    {uploadandoFoto === chave ? "..." : <><Upload size={11} /> Upload</>}
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      disabled={uploadandoFoto === chave}
+                      onChange={e => {
+                        const f = e.target.files?.[0];
+                        if (f) uploadFoto(f, set, chave);
+                        e.target.value = "";
+                      }}
+                    />
+                  </label>
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
 
         {mensagem && (

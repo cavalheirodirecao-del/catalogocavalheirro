@@ -18,6 +18,12 @@ export async function GET(request: NextRequest) {
     webhookAtivo: config.webhookAtivo,
     webhookDataCrazyUrl: isAdmin ? config.webhookDataCrazyUrl : undefined,
     webhookDataCrazyToken: isAdmin ? config.webhookDataCrazyToken : undefined,
+    googleFormUrl: config.googleFormUrl,
+    fotoTrabalhoFabrica1: config.fotoTrabalhoFabrica1,
+    fotoTrabalhoFabrica2: config.fotoTrabalhoFabrica2,
+    fotoTrabalhoEquipe: config.fotoTrabalhoEquipe,
+    fotoTrabalhoShowroom1: config.fotoTrabalhoShowroom1,
+    fotoTrabalhoShowroom2: config.fotoTrabalhoShowroom2,
   });
 }
 
@@ -32,6 +38,10 @@ export async function POST(request: NextRequest) {
     taxaExcursao, qtdMinimaAtacado, qtdMinimaFabrica,
     anuncioBarAtivo, anuncioBarTexto,
     webhookAtivo, webhookDataCrazyUrl, webhookDataCrazyToken,
+    googleFormUrl,
+    fotoTrabalhoFabrica1, fotoTrabalhoFabrica2,
+    fotoTrabalhoEquipe,
+    fotoTrabalhoShowroom1, fotoTrabalhoShowroom2,
   } = body;
 
   const existente = await prisma.configuracaoGeral.findFirst();
@@ -45,6 +55,12 @@ export async function POST(request: NextRequest) {
   if (webhookAtivo !== undefined) data.webhookAtivo = webhookAtivo;
   if (webhookDataCrazyUrl !== undefined) data.webhookDataCrazyUrl = webhookDataCrazyUrl;
   if (webhookDataCrazyToken !== undefined) data.webhookDataCrazyToken = webhookDataCrazyToken;
+  if (googleFormUrl !== undefined) data.googleFormUrl = googleFormUrl;
+  if (fotoTrabalhoFabrica1  !== undefined) data.fotoTrabalhoFabrica1  = fotoTrabalhoFabrica1;
+  if (fotoTrabalhoFabrica2  !== undefined) data.fotoTrabalhoFabrica2  = fotoTrabalhoFabrica2;
+  if (fotoTrabalhoEquipe    !== undefined) data.fotoTrabalhoEquipe    = fotoTrabalhoEquipe;
+  if (fotoTrabalhoShowroom1 !== undefined) data.fotoTrabalhoShowroom1 = fotoTrabalhoShowroom1;
+  if (fotoTrabalhoShowroom2 !== undefined) data.fotoTrabalhoShowroom2 = fotoTrabalhoShowroom2;
 
   if (existente) {
     const atualizado = await prisma.configuracaoGeral.update({

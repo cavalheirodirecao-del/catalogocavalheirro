@@ -40,12 +40,6 @@ const BENEFICIOS = [
   },
 ];
 
-// URLs das fotos — substitua pelos links reais do Supabase Storage ou outro host
-const FOTO_FABRICA_1 = "";   // fábrica — foto grande principal
-const FOTO_FABRICA_2 = "";   // fábrica — foto secundária
-const FOTO_EQUIPE    = "";   // nossa equipe
-const FOTO_SHOWROOM_1 = "";  // showroom — foto principal
-const FOTO_SHOWROOM_2 = "";  // showroom — foto secundária
 
 const EVENTOS = [
   { ano: "2024", titulo: "Expo Moda Agreste", desc: "Participação no maior evento do Polo do Agreste. Equipe reunida, novos lançamentos e muito networking." },
@@ -73,9 +67,14 @@ function FotoCard({ src, label, tall }: { src: string; label: string; tall?: boo
 
 interface Props {
   googleFormUrl: string | null;
+  fotos: {
+    fabrica1: string; fabrica2: string;
+    equipe: string;
+    showroom1: string; showroom2: string;
+  };
 }
 
-export default function TrabalheConoscoClient({ googleFormUrl }: Props) {
+export default function TrabalheConoscoClient({ googleFormUrl, fotos }: Props) {
   const formRef = useRef<HTMLDivElement>(null);
 
   function rolarParaForm() {
@@ -188,15 +187,15 @@ export default function TrabalheConoscoClient({ googleFormUrl }: Props) {
 
           {/* Fábrica */}
           <div className="grid grid-cols-2 gap-3 mb-3">
-            <FotoCard src={FOTO_FABRICA_1} label="Nossa Fábrica" tall />
-            <FotoCard src={FOTO_FABRICA_2} label="Nossa Fábrica" tall />
+            <FotoCard src={fotos.fabrica1} label="Nossa Fábrica" tall />
+            <FotoCard src={fotos.fabrica2} label="Nossa Fábrica" tall />
           </div>
 
           {/* Equipe + Showroom */}
           <div className="grid grid-cols-3 gap-3">
-            <FotoCard src={FOTO_EQUIPE} label="Nossa Equipe" />
-            <FotoCard src={FOTO_SHOWROOM_1} label="Showroom" />
-            <FotoCard src={FOTO_SHOWROOM_2} label="Showroom" />
+            <FotoCard src={fotos.equipe} label="Nossa Equipe" />
+            <FotoCard src={fotos.showroom1} label="Showroom" />
+            <FotoCard src={fotos.showroom2} label="Showroom" />
           </div>
         </div>
       </section>
