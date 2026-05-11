@@ -2,7 +2,9 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Users2, Clock, CheckCircle, XCircle, PauseCircle, ChevronRight, UserPlus } from "lucide-react";
+import { Users2, Clock, CheckCircle, XCircle, PauseCircle, ChevronRight, UserPlus, Copy, ExternalLink } from "lucide-react";
+
+const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL ?? "https://catalogocavalheirro.vercel.app";
 
 type StatusAfiliado = "PENDENTE" | "APROVADO" | "REJEITADO" | "SUSPENSO";
 
@@ -26,10 +28,23 @@ const TABS: { label: string; value: StatusAfiliado; icon: any; cor: string }[] =
   { label: "Suspensos", value: "SUSPENSO",  icon: PauseCircle,  cor: "text-gray-600 bg-gray-50 border-gray-200"      },
 ];
 
+function getLinkAfiliado(a: Afiliado) {
+  return `${BASE_URL}/${a.tipo.toLowerCase()}?ref=${a.slug}`;
+}
+
 export default function AfiliadosAdminPage() {
   const [tabAtiva, setTabAtiva] = useState<StatusAfiliado>("PENDENTE");
   const [afiliados, setAfiliados] = useState<Afiliado[]>([]);
   const [loading, setLoading] = useState(true);
+  const [copiado, setCopiado] = useState<string | null>(null);
+
+  function copiarLink(e: React.MouseEvent, id: string, url: string) {
+    e.preventDefault();
+    e.stopPropagation();
+    navigator.clipboard.writeText(url);
+    setCopiado(id);
+    setTimeout(() => setCopiado(null), 2000);
+  }
 
   useEffect(() => {
     setLoading(true);
@@ -109,10 +124,37 @@ export default function AfiliadosAdminPage() {
                 <ChevronRight size={16} className="text-gray-300 shrink-0 mt-1" />
               </div>
 
-              <div className="flex items-center gap-3 text-xs text-gray-500">
+              <div className="flex items-center gap-2 text-xs text-gray-500">
                 <span className="font-mono bg-gray-100 px-2 py-0.5 rounded">/{a.slug}</span>
                 {a.cidade && <span>{a.cidade}{a.estado ? `, ${a.estado}` : ""}</span>}
               </div>
+
+              {a.status === "APROVADO" && (
+                <div
+                  className="flex items-center gap-1.5 bg-green-50 border border-green-200 rounded-lg px-2.5 py-1.5"
+                  onClick={e => e.preventDefault()}
+                >
+                  <span className="font-mono text-[10px] text-green-700 truncate flex-1">
+                    {getLinkAfiliado(a)}
+                  </span>
+                  <button
+                    onClick={e => copiarLink(e, a.id, getLinkAfiliado(a))}
+                    className="text-green-600 hover:text-green-800 shrink-0"
+                    title="Copiar link"
+                  >
+                    {copiado === a.id ? <CheckCircle size={12} /> : <Copy size={12} />}
+                  </button>
+                  <a
+                    href={getLinkAfiliado(a)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-green-600 hover:text-green-800 shrink-0"
+                    title="Abrir link"
+                  >
+                    <ExternalLink size={12} />
+                  </a>
+                </div>
+              )}
 
               <div className="flex items-center justify-between text-xs text-gray-400 pt-1 border-t border-gray-50">
                 <span>{a._count.pedidos} pedido{a._count.pedidos !== 1 ? "s" : ""}</span>

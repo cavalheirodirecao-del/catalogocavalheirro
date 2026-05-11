@@ -2,11 +2,7 @@ import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import { Plus, ExternalLink } from "lucide-react";
 
-const dominios: Record<string, string> = {
-  VAREJO:  process.env.NEXT_PUBLIC_DOMINIO_VAREJO  ?? "varejo.cavalheiro.com.br",
-  ATACADO: process.env.NEXT_PUBLIC_DOMINIO_ATACADO ?? "atacado.cavalheiro.com.br",
-  FABRICA: process.env.NEXT_PUBLIC_DOMINIO_FABRICA ?? "fabrica.cavalheiro.com.br",
-};
+const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL ?? "https://catalogocavalheirro.vercel.app";
 
 export default async function VendedoresPage() {
   const vendedores = await prisma.vendedor.findMany({
@@ -50,26 +46,27 @@ export default async function VendedoresPage() {
               </Link>
             </div>
 
-            <div className="mt-4 flex flex-wrap gap-2">
+            <div className="mt-4 space-y-2">
               {(["VAREJO", "ATACADO", "FABRICA"] as const).map((tipo) => {
                 const link = v.links.find((l) => l.catalogo === tipo);
-                const url = `https://${dominios[tipo]}/${v.slug}`;
+                const url = `${BASE_URL}/${tipo.toLowerCase()}?vendedor=${v.slug}`;
                 return (
-                  <div
-                    key={tipo}
-                    className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs border ${
-                      link?.ativo
-                        ? "bg-green-50 border-green-200 text-green-700"
-                        : "bg-gray-50 border-gray-200 text-gray-400"
-                    }`}
-                  >
-                    <span className="font-medium">{tipo}</span>
-                    {link?.ativo && (
-                      <a href={url} target="_blank" rel="noopener noreferrer">
-                        <ExternalLink size={11} />
-                      </a>
+                  <div key={tipo} className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs border ${
+                    link?.ativo
+                      ? "bg-green-50 border-green-200 text-green-700"
+                      : "bg-gray-50 border-gray-200 text-gray-400"
+                  }`}>
+                    <span className="font-semibold w-14 shrink-0">{tipo}</span>
+                    {link?.ativo ? (
+                      <>
+                        <span className="font-mono truncate flex-1 text-green-600">{url}</span>
+                        <a href={url} target="_blank" rel="noopener noreferrer" title="Abrir link" className="shrink-0">
+                          <ExternalLink size={12} />
+                        </a>
+                      </>
+                    ) : (
+                      <span className="text-gray-300">catálogo inativo</span>
                     )}
-                    {!link && <span className="text-gray-300">— inativo</span>}
                   </div>
                 );
               })}
