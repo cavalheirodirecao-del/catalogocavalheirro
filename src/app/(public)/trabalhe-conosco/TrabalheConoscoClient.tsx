@@ -40,13 +40,12 @@ const BENEFICIOS = [
   },
 ];
 
-const FOTOS_EMPRESA = [
-  { label: "Nossa Fábrica", span: "col-span-2 row-span-2" },
-  { label: "Equipe de Produção", span: "col-span-1 row-span-1" },
-  { label: "Showroom", span: "col-span-1 row-span-1" },
-  { label: "Expedição", span: "col-span-1 row-span-2" },
-  { label: "Design", span: "col-span-1 row-span-1" },
-];
+// URLs das fotos — substitua pelos links reais do Supabase Storage ou outro host
+const FOTO_FABRICA_1 = "";   // fábrica — foto grande principal
+const FOTO_FABRICA_2 = "";   // fábrica — foto secundária
+const FOTO_EQUIPE    = "";   // nossa equipe
+const FOTO_SHOWROOM_1 = "";  // showroom — foto principal
+const FOTO_SHOWROOM_2 = "";  // showroom — foto secundária
 
 const EVENTOS = [
   { ano: "2024", titulo: "Expo Moda Agreste", desc: "Participação no maior evento do Polo do Agreste. Equipe reunida, novos lançamentos e muito networking." },
@@ -54,6 +53,23 @@ const EVENTOS = [
   { ano: "2023", titulo: "Feira de Caruaru", desc: "Presença forte no Fash Trade com estandes que representam o melhor da Cavalheiro." },
   { ano: "2023", titulo: "Treinamento de Equipe", desc: "Workshop interno de atendimento ao cliente e novas coleções. Aprendizado em conjunto." },
 ];
+
+function FotoCard({ src, label, tall }: { src: string; label: string; tall?: boolean }) {
+  return (
+    <div className={`relative rounded-2xl overflow-hidden bg-white/5 border border-white/10 ${tall ? "h-64" : "h-48"}`}>
+      {src ? (
+        <img src={src} alt={label} className="w-full h-full object-cover" />
+      ) : (
+        <div className="absolute inset-0 flex items-center justify-center">
+          <p className="text-xs font-space-mono text-white/20">{label}</p>
+        </div>
+      )}
+      <div className="absolute bottom-3 left-3">
+        <span className="bg-black/60 backdrop-blur text-white/70 text-xs px-2.5 py-1 rounded-full font-dm-sans">{label}</span>
+      </div>
+    </div>
+  );
+}
 
 interface Props {
   googleFormUrl: string | null;
@@ -170,62 +186,18 @@ export default function TrabalheConoscoClient({ googleFormUrl }: Props) {
             </h2>
           </div>
 
-          {/* Grid de fotos — substitua os placeholders por imagens reais */}
-          <div className="grid grid-cols-3 grid-rows-3 gap-3 h-[520px]">
-            {/* Grande — esquerda */}
-            <div className="col-span-2 row-span-2 rounded-2xl overflow-hidden relative bg-white/5 border border-white/10 group">
-              <div className="absolute inset-0 flex items-center justify-center flex-col gap-2 text-white/20">
-                <div className="w-12 h-12 border-2 border-dashed border-white/20 rounded-xl flex items-center justify-center">
-                  <span className="text-xs font-space-mono">FOTO 1</span>
-                </div>
-                <p className="text-xs font-space-mono text-white/20">Nossa Fábrica · Foto Principal</p>
-              </div>
-              <div className="absolute bottom-4 left-4">
-                <span className="bg-black/60 backdrop-blur text-white/70 text-xs px-3 py-1.5 rounded-full font-dm-sans">Nossa Fábrica</span>
-              </div>
-            </div>
-
-            {/* Superior direita */}
-            <div className="col-span-1 row-span-1 rounded-2xl overflow-hidden relative bg-white/5 border border-white/10">
-              <div className="absolute inset-0 flex items-center justify-center">
-                <p className="text-xs font-space-mono text-white/20">FOTO 2</p>
-              </div>
-              <div className="absolute bottom-3 left-3">
-                <span className="bg-black/60 backdrop-blur text-white/60 text-xs px-2.5 py-1 rounded-full">Equipe</span>
-              </div>
-            </div>
-
-            {/* Inferior direita */}
-            <div className="col-span-1 row-span-1 rounded-2xl overflow-hidden relative bg-white/5 border border-white/10">
-              <div className="absolute inset-0 flex items-center justify-center">
-                <p className="text-xs font-space-mono text-white/20">FOTO 3</p>
-              </div>
-              <div className="absolute bottom-3 left-3">
-                <span className="bg-black/60 backdrop-blur text-white/60 text-xs px-2.5 py-1 rounded-full">Showroom</span>
-              </div>
-            </div>
-
-            {/* Linha inferior */}
-            <div className="col-span-1 row-span-1 rounded-2xl overflow-hidden relative bg-white/5 border border-white/10">
-              <div className="absolute inset-0 flex items-center justify-center">
-                <p className="text-xs font-space-mono text-white/20">FOTO 4</p>
-              </div>
-            </div>
-            <div className="col-span-1 row-span-1 rounded-2xl overflow-hidden relative bg-white/5 border border-white/10">
-              <div className="absolute inset-0 flex items-center justify-center">
-                <p className="text-xs font-space-mono text-white/20">FOTO 5</p>
-              </div>
-            </div>
-            <div className="col-span-1 row-span-1 rounded-2xl overflow-hidden relative bg-white/5 border border-white/10">
-              <div className="absolute inset-0 flex items-center justify-center">
-                <p className="text-xs font-space-mono text-white/20">FOTO 6</p>
-              </div>
-            </div>
+          {/* Fábrica */}
+          <div className="grid grid-cols-2 gap-3 mb-3">
+            <FotoCard src={FOTO_FABRICA_1} label="Nossa Fábrica" tall />
+            <FotoCard src={FOTO_FABRICA_2} label="Nossa Fábrica" tall />
           </div>
 
-          <p className="mt-4 text-white/20 text-xs font-space-mono text-center">
-            As fotos acima serão substituídas pelas fotos reais da empresa
-          </p>
+          {/* Equipe + Showroom */}
+          <div className="grid grid-cols-3 gap-3">
+            <FotoCard src={FOTO_EQUIPE} label="Nossa Equipe" />
+            <FotoCard src={FOTO_SHOWROOM_1} label="Showroom" />
+            <FotoCard src={FOTO_SHOWROOM_2} label="Showroom" />
+          </div>
         </div>
       </section>
 
