@@ -1,4 +1,4 @@
-import { MapPin, Clock, Phone, Heart, Gem, Users, Leaf } from "lucide-react";
+import { MapPin, Clock, Heart, Gem, Users, Leaf } from "lucide-react";
 
 const VALORES = [
   { icon: Gem, titulo: "Qualidade", desc: "Cada peça passa por controle rigoroso antes de chegar ao cliente. Tecidos selecionados, costuras reforçadas." },
@@ -11,31 +11,61 @@ const LOJAS = [
   {
     cidade: "Toritama",
     estado: "PE",
-    endereco: "Rua Principal, 123 — Centro",
-    horario: "Seg–Sab: 7h às 17h",
-    telefone: "(81) 99999-0001",
-    whatsapp: "5581999990001",
+    local: "Shopping Parque das Feiras",
+    endereco: "Av. Dorival José Pereira, 844 — Parque das Feiras",
+    horario: "Seg–Sex: 8h–16h\nSáb: 8h–12h\nDom: Fechado",
+    whatsapp: "",
     descricao: "Nossa loja sede, no coração do polo jeanswear.",
     destaque: true,
   },
   {
     cidade: "Caruaru",
     estado: "PE",
-    endereco: "Av. das Nações, 456 — Centro",
-    horario: "Seg–Sab: 8h às 18h",
-    telefone: "(81) 99999-0002",
-    whatsapp: "5581999990002",
+    local: "",
+    endereco: "R. Rui Limeira Rosal, 425",
+    horario: "Seg–Qua: 8h–17h\nQui: 8h–20h\nSex: 8h–15h\nSáb: 8h–13h\nDom: Fechado",
+    whatsapp: "",
     descricao: "Nossa loja no maior polo comercial do Nordeste.",
     destaque: false,
   },
   {
     cidade: "Santa Cruz do Capibaribe",
     estado: "PE",
-    endereco: "Rua do Comércio, 789 — Centro",
-    horario: "Seg–Sab: 7h às 17h",
-    telefone: "(81) 99999-0003",
-    whatsapp: "5581999990003",
+    local: "Centro",
+    endereco: "R. Cabo Otávio Aragão, 145 — Centro",
+    horario: "Seg–Sex: 8h–17h\nSáb: 8h–12h\nDom: Fechado",
+    whatsapp: "",
     descricao: "Loja no segundo maior polo de confecções do Brasil.",
+    destaque: false,
+  },
+  {
+    cidade: "Santa Cruz do Capibaribe",
+    estado: "PE",
+    local: "Moda Center Santa Cruz",
+    endereco: "Setor Amarelo, Bloco 2 — Lojas 16, 17 e 18",
+    horario: "Qui: 8h–20h\nSex: 6h–14h\n(Demais dias: Fechado)",
+    whatsapp: "",
+    descricao: "No maior centro de moda do interior nordestino.",
+    destaque: false,
+  },
+  {
+    cidade: "Maceió",
+    estado: "AL",
+    local: "Shopping Pátio Maceió",
+    endereco: "Av. Menino Marcelo, 3800 — Loja 156",
+    horario: "Conforme horário do shopping",
+    whatsapp: "",
+    descricao: "Nossa loja em Alagoas.",
+    destaque: false,
+  },
+  {
+    cidade: "Palmares",
+    estado: "PE",
+    local: "Centro",
+    endereco: "R. Letácio Montenegro, 2021 — Centro",
+    horario: "",
+    whatsapp: "",
+    descricao: "Loja no sul de Pernambuco.",
     destaque: false,
   },
 ];
@@ -151,10 +181,10 @@ export default function SobrePage() {
             </h2>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-            {LOJAS.map((loja) => (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {LOJAS.map((loja, i) => (
               <div
-                key={loja.cidade}
+                key={`${loja.cidade}-${i}`}
                 className={`bg-white border rounded-2xl p-6 space-y-4 ${
                   loja.destaque ? "border-[#B8965A] shadow-lg" : "border-[#D5C9B5]"
                 }`}
@@ -166,7 +196,9 @@ export default function SobrePage() {
                 )}
                 <div>
                   <p className="font-cormorant text-2xl font-semibold text-[#1A1714]">{loja.cidade}</p>
-                  <p className="text-xs text-[#B8965A] font-space-mono tracking-wider">{loja.estado}</p>
+                  <p className="text-xs text-[#B8965A] font-space-mono tracking-wider">
+                    {loja.estado}{loja.local ? ` · ${loja.local}` : ""}
+                  </p>
                 </div>
                 <p className="text-sm text-[#1A1714]/50 font-dm-sans leading-relaxed">{loja.descricao}</p>
                 <div className="space-y-2 pt-2 border-t border-[#D5C9B5]">
@@ -174,23 +206,23 @@ export default function SobrePage() {
                     <MapPin size={14} className="mt-0.5 shrink-0 text-[#B8965A]" />
                     <span className="font-dm-sans">{loja.endereco}</span>
                   </div>
-                  <div className="flex items-center gap-2 text-sm text-[#1A1714]/60">
-                    <Clock size={14} className="shrink-0 text-[#B8965A]" />
-                    <span className="font-dm-sans">{loja.horario}</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-sm text-[#1A1714]/60">
-                    <Phone size={14} className="shrink-0 text-[#B8965A]" />
-                    <span className="font-dm-sans">{loja.telefone}</span>
-                  </div>
+                  {loja.horario && (
+                    <div className="flex items-start gap-2 text-sm text-[#1A1714]/60">
+                      <Clock size={14} className="mt-0.5 shrink-0 text-[#B8965A]" />
+                      <span className="font-dm-sans whitespace-pre-line">{loja.horario}</span>
+                    </div>
+                  )}
                 </div>
-                <a
-                  href={`https://wa.me/${loja.whatsapp}?text=Olá! Vim pelo site da Cavalheiro.`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="block w-full text-center bg-[#1A1714] text-[#B8965A] font-dm-sans font-semibold text-sm py-2.5 rounded-lg hover:bg-[#B8965A] hover:text-white transition"
-                >
-                  WhatsApp
-                </a>
+                {loja.whatsapp && (
+                  <a
+                    href={`https://wa.me/${loja.whatsapp}?text=Olá! Vim pelo site da Cavalheiro.`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="block w-full text-center bg-[#1A1714] text-[#B8954A] font-dm-sans font-semibold text-sm py-2.5 rounded-lg hover:bg-[#B8954A] hover:text-white transition"
+                  >
+                    WhatsApp
+                  </a>
+                )}
               </div>
             ))}
           </div>
