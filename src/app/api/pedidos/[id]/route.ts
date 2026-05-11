@@ -42,7 +42,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
 
   try {
     const body = await req.json();
-    const { status, obs, excursaoId } = body;
+    const { status, obs, excursaoId, restaurarEstoque } = body;
 
     const atual = await prisma.pedido.findUnique({
       where: { id: params.id },
@@ -54,28 +54,54 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
       if (status && status !== atual.status) {
         const de = atual.status;
         const para = status;
-        const COMMITTED = ["CONFIRMADO", "SEPARANDO", "ENVIADO", "CONCLUIDO"];
+        const PRE_CONCLUIDO = ["PENDENTE", "CONFIRMADO", "SEPARANDO", "ENVIADO"];
+
+        const estoques = await tx.estoque.findMany({
+          where: { varianteId: { in: atual.itens.map(i => i.varianteId) } },
+        });
 
         for (const item of atual.itens) {
-          if (de === "PENDENTE" && COMMITTED.includes(para)) {
-            await tx.estoque.update({
-              where: { varianteId: item.varianteId },
-              data: {
-                quantidade: { decrement: item.quantidade },
-                pendente: { decrement: item.quantidade },
-              },
-            });
-          } else if (de === "PENDENTE" && para === "CANCELADO") {
-            await tx.estoque.update({
-              where: { varianteId: item.varianteId },
-              data: { pendente: { decrement: item.quantidade } },
-            });
-          } else if (COMMITTED.includes(de) && para === "CANCELADO") {
-            await tx.estoque.update({
-              where: { varianteId: item.varianteId },
-              data: { quantidade: { increment: item.quantidade } },
-            });
+          const est = estoques.find(e => e.varianteId === item.varianteId);
+          // estaReservado=true → pedido criado no novo modelo (pendente ainda não liberado)
+          // estaReservado=false → pedido antigo (pendente já foi zerado ao confirmar)
+          const estaReservado = (est?.pendente ?? 0) >= item.quantidade;
+
+          if (PRE_CONCLUIDO.includes(de) && para === "CONCLUIDO") {
+            if (estaReservado) {
+              // Novo modelo: baixa o estoque físico apenas quando concluído
+              await tx.estoque.update({
+                where: { varianteId: item.varianteId },
+                data: {
+                  quantidade: { decrement: item.quantidade },
+                  pendente: { decrement: item.quantidade },
+                },
+              });
+            }
+            // Pedido antigo (pendente=0, quantidade já debitada ao confirmar) — não faz nada
+          } else if (para === "CANCELADO" && restaurarEstoque) {
+            if (de === "CONCLUIDO") {
+              // Devolve estoque físico (foi debitado no CONCLUIDO)
+              await tx.estoque.update({
+                where: { varianteId: item.varianteId },
+                data: { quantidade: { increment: item.quantidade } },
+              });
+            } else if (PRE_CONCLUIDO.includes(de)) {
+              if (estaReservado) {
+                // Libera reserva do novo modelo
+                await tx.estoque.update({
+                  where: { varianteId: item.varianteId },
+                  data: { pendente: { decrement: item.quantidade } },
+                });
+              } else {
+                // Pedido antigo: quantidade foi debitada ao confirmar → devolve
+                await tx.estoque.update({
+                  where: { varianteId: item.varianteId },
+                  data: { quantidade: { increment: item.quantidade } },
+                });
+              }
+            }
           }
+          // Demais transições (PENDENTE→CONFIRMADO etc.): nenhuma mudança de estoque
         }
       }
 

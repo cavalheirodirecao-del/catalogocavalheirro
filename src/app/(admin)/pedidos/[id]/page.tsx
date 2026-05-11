@@ -32,6 +32,7 @@ export default function DetalhePedidoPage() {
   const [pedido, setPedido] = useState<any>(null);
   const [status, setStatus] = useState("");
   const [obs, setObs] = useState("");
+  const [showCancelDialog, setShowCancelDialog] = useState(false);
 
   // Vínculo de excursão
   const [excursoes, setExcursoes] = useState<{ id: string; nome: string }[]>([]);
@@ -81,15 +82,23 @@ export default function DetalhePedidoPage() {
     }
   }
 
-  async function salvarStatus() {
+  async function salvarStatus(restaurarEstoque?: boolean) {
     setSaving(true);
     await fetch(`/api/pedidos/${id}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ status, obs }),
+      body: JSON.stringify({ status, obs, restaurarEstoque }),
     });
     setSaving(false);
     router.push("/pedidos");
+  }
+
+  function handleSalvarStatus() {
+    if (status === "CANCELADO" && pedido.status !== "CANCELADO") {
+      setShowCancelDialog(true);
+    } else {
+      salvarStatus();
+    }
   }
 
   if (loading) return <div className="text-gray-400 p-8">Carregando...</div>;
@@ -327,12 +336,43 @@ export default function DetalhePedidoPage() {
         <div className="flex gap-3">
           <button type="button" onClick={() => router.back()}
             className="flex-1 border border-gray-200 rounded-lg py-2 text-sm hover:bg-gray-50 transition">Voltar</button>
-          <button type="button" onClick={salvarStatus} disabled={saving}
+          <button type="button" onClick={handleSalvarStatus} disabled={saving}
             className="flex-1 bg-black text-white rounded-lg py-2 text-sm hover:bg-gray-800 transition disabled:opacity-50">
             {saving ? "Salvando..." : "Salvar Status"}
           </button>
         </div>
       </div>
+
+      {/* ── Modal: restaurar estoque ao cancelar ── */}
+      {showCancelDialog && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl p-6 shadow-xl max-w-sm w-full mx-4">
+            <h3 className="font-semibold text-lg mb-1">Cancelar pedido #{pedido.numero}</h3>
+            <p className="text-gray-500 text-sm mb-5">
+              Deseja restaurar o estoque dos produtos deste pedido?
+            </p>
+            <div className="flex flex-col gap-2">
+              <button
+                onClick={() => { setShowCancelDialog(false); salvarStatus(true); }}
+                disabled={saving}
+                className="w-full bg-black text-white py-2.5 rounded-lg font-medium hover:bg-gray-800 transition disabled:opacity-50">
+                Sim, restaurar estoque
+              </button>
+              <button
+                onClick={() => { setShowCancelDialog(false); salvarStatus(false); }}
+                disabled={saving}
+                className="w-full border border-gray-300 text-gray-700 py-2.5 rounded-lg font-medium hover:bg-gray-50 transition disabled:opacity-50">
+                Não, manter estoque atual
+              </button>
+              <button
+                onClick={() => setShowCancelDialog(false)}
+                className="text-gray-400 text-sm py-1.5 hover:text-gray-600 transition">
+                Voltar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
