@@ -36,7 +36,7 @@ interface Produto {
     variantes: {
       id: string;
       gradeItem: { id: string; valor: string; ordem: number };
-      estoque: { quantidade: number; pendente?: number } | null;
+      estoque: { quantidade: number; pendente: number } | null;
     }[];
   }[];
 }
@@ -610,8 +610,8 @@ function CatalogoInner({ produtos, catalogo, banners, config, vendedorNome, qtdM
         {/* Linha principal: logo / busca / carrinho */}
         <div className="max-w-7xl mx-auto px-4 h-14 flex items-center justify-between gap-4">
           <div className="shrink-0">
-            <p className={tema.logoClass}>{config?.titulo ?? "Cavalheiro"}</p>
-            <p className={tema.logoLabel}>{LABEL_CATALOGO[catalogo]}</p>
+            <p className={tema.logoClass}>{catalogo === "VAREJO" ? "Coleção Cavalheiro" : (config?.titulo ?? "Cavalheiro")}</p>
+            <p className={tema.logoLabel}>{catalogo === "VAREJO" ? "Escolha seu próximo favorito" : LABEL_CATALOGO[catalogo]}</p>
           </div>
 
           <div className="flex-1 max-w-md hidden sm:block">

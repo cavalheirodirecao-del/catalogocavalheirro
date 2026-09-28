@@ -1,10 +1,11 @@
+import { withApiAccess } from "@/lib/api-access";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { calcularTierAfiliado, calcularComissao } from "@/lib/afiliados";
 
 // GET /api/afiliados/pagamentos?mes=2026-04
 // Relatório mensal de comissão para o admin
-export async function GET(req: NextRequest) {
+async function GETHandler(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const mes = searchParams.get("mes") ?? `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, "0")}`;
 
@@ -18,7 +19,7 @@ export async function GET(req: NextRequest) {
       usuario: { select: { nome: true } },
       pedidos: {
         where: {
-          status: { in: ["CONFIRMADO", "ENVIADO", "CONCLUIDO"] },
+          status: { in: ["CONFIRMADO", "SEPARANDO", "ENVIADO", "CONCLUIDO"] },
           criadoEm: { gte: inicioMes, lte: fimMes },
         },
         select: { total: true },
@@ -55,7 +56,7 @@ export async function GET(req: NextRequest) {
 }
 
 // POST /api/afiliados/pagamentos — gerar/atualizar registro de pagamento
-export async function POST(req: NextRequest) {
+async function POSTHandler(req: NextRequest) {
   const { afiliadoId, periodo, valor, qtdPedidos, obs } = await req.json();
 
   if (!afiliadoId || !periodo || valor === undefined) {
@@ -77,3 +78,6 @@ export async function POST(req: NextRequest) {
 
   return NextResponse.json(pagamento);
 }
+
+export const GET = withApiAccess(GETHandler);
+export const POST = withApiAccess(POSTHandler);

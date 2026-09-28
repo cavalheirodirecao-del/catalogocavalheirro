@@ -1,3 +1,4 @@
+import { withApiAccess } from "@/lib/api-access";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { TipoCatalogo } from "@prisma/client";
@@ -10,7 +11,7 @@ const TITULOS_PADRAO: Record<TipoCatalogo, string> = {
   FABRICA: "Atacado Grandes Clientes",
 };
 
-export async function GET(_req: NextRequest, { params }: { params: { catalogo: string } }) {
+async function GETHandler(_req: NextRequest, { params }: { params: { catalogo: string } }) {
   const catalogo = params.catalogo.toUpperCase() as TipoCatalogo;
 
   if (!TIPOS_VALIDOS.includes(catalogo)) {
@@ -26,7 +27,7 @@ export async function GET(_req: NextRequest, { params }: { params: { catalogo: s
   return NextResponse.json(config);
 }
 
-export async function PATCH(req: NextRequest, { params }: { params: { catalogo: string } }) {
+async function PATCHHandler(req: NextRequest, { params }: { params: { catalogo: string } }) {
   const catalogo = params.catalogo.toUpperCase() as TipoCatalogo;
 
   if (!TIPOS_VALIDOS.includes(catalogo)) {
@@ -58,3 +59,6 @@ export async function PATCH(req: NextRequest, { params }: { params: { catalogo: 
 
   return NextResponse.json(config);
 }
+
+export const GET = withApiAccess(GETHandler);
+export const PATCH = withApiAccess(PATCHHandler);

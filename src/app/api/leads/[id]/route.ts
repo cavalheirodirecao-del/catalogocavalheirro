@@ -1,16 +1,17 @@
+import { withApiAccess } from "@/lib/api-access";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
-export async function GET(_: NextRequest, { params }: { params: { id: string } }) {
+async function GETHandler(_: NextRequest, { params }: { params: { id: string } }) {
   const lead = await prisma.leadAtacado.findUnique({
     where: { id: params.id },
-    select: { id: true, nome: true, status: true },
+    select: { id: true, status: true },
   });
   if (!lead) return NextResponse.json({ error: "Não encontrado" }, { status: 404 });
   return NextResponse.json(lead);
 }
 
-export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
+async function PATCHHandler(req: NextRequest, { params }: { params: { id: string } }) {
   try {
     const { status } = await req.json();
     const lead = await prisma.leadAtacado.update({
@@ -23,3 +24,6 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }
+
+export const GET = withApiAccess(GETHandler);
+export const PATCH = withApiAccess(PATCHHandler);

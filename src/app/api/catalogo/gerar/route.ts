@@ -1,3 +1,4 @@
+import { withApiAccess } from "@/lib/api-access";
 // Recebe os parâmetros, salva um CatalogoJob no banco e retorna o ID.
 // A geração real acontece em /api/catalogo/processar/[id] (disparada pelo frontend).
 
@@ -6,7 +7,7 @@ export const runtime = "nodejs";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
-export async function POST(req: NextRequest) {
+async function POSTHandler(req: NextRequest) {
   try {
     const { grupoId, subGrupoId, capaUrl, tabelaPreco, layout } = await req.json();
 
@@ -30,3 +31,5 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ erro: "Falha ao criar o job." }, { status: 500 });
   }
 }
+
+export const POST = withApiAccess(POSTHandler);

@@ -1,14 +1,15 @@
+import { withApiAccess } from "@/lib/api-access";
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
-export async function GET() {
+async function GETHandler() {
   const banners = await prisma.banner.findMany({
     orderBy: [{ catalogo: "asc" }, { ordem: "asc" }],
   });
   return NextResponse.json(banners);
 }
 
-export async function POST(req: Request) {
+async function POSTHandler(req: Request) {
   try {
     const body = await req.json();
     const { catalogo, titulo, subtitulo, imagemDesktop, imagemTablet, imagemMobile, videoUrl, linkUrl, ordem } = body;
@@ -37,3 +38,6 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }
+
+export const GET = withApiAccess(GETHandler);
+export const POST = withApiAccess(POSTHandler);

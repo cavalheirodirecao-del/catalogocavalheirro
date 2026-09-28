@@ -1,78 +1,31 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { getToken } from "next-auth/jwt";
+import { canAccessApi, isPublicApi } from "@/lib/access-policy";
 
-const ROTAS_ADMIN = ["/dashboard", "/produtos", "/estoque", "/pedidos", "/clientes", "/vendedores", "/banners", "/relatorios", "/alcance", "/lojas", "/excursoes", "/cupons", "/configuracoes", "/afiliados", "/usuarios", "/minha-senha"];
+const ADMIN_ROUTES = ["/dashboard", "/produtos", "/estoque", "/pedidos", "/clientes", "/vendedores", "/banners", "/relatorios", "/alcance", "/lojas", "/excursoes", "/cupons", "/configuracoes", "/afiliados", "/usuarios", "/minha-senha", "/leads", "/catalogos", "/categorias", "/posts"];
+const under = (path: string, base: string) => path === base || path.startsWith(base + "/");
 
-const ROTAS_VENDEDOR = ["/pedidos", "/minha-senha"];
-
-const CATALOGOS_VALIDOS = ["atacado", "varejo", "fabrica"] as const;
-
-export async function middleware(request: NextRequest) {
-  const { pathname } = request.nextUrl;
-
-  // Cookie last-touch: ?ref=slug (afiliado) ou ?vendedor=slug (vendedor interno)
-  const refParam = request.nextUrl.searchParams.get("ref");
-  const vendParam = request.nextUrl.searchParams.get("vendedor");
-  const slugRef = refParam ?? vendParam;
-
-  // Caminhos públicos do módulo de afiliados (sem auth)
-  const AFILIADOS_PUBLICO = ["/afiliados", "/afiliados/login", "/afiliados/cadastro"];
-  const isAfiladoPublico = AFILIADOS_PUBLICO.includes(pathname);
-
-  // Protege portal do afiliado: /afiliados/dashboard*
-  if (pathname.startsWith("/afiliados/dashboard")) {
-    const token = await getToken({ req: request, secret: process.env.NEXTAUTH_SECRET });
-    if (!token || (token as any).perfil !== "AFILIADO") {
-      const res = NextResponse.redirect(new URL("/afiliados/login", request.url));
-      if (slugRef) {
-        res.cookies.set("_ref", slugRef, { maxAge: 60 * 60 * 24 * 7, path: "/", sameSite: "lax", httpOnly: true });
-      }
-      return res;
-    }
+export async function middleware(req: NextRequest) {
+  const path = req.nextUrl.pathname;
+  if (path.startsWith("/api/")) {
+    if (isPublicApi(path, req.method, req.nextUrl.searchParams)) return NextResponse.next();
+    const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
+    if (!token) return NextResponse.json({ erro: "Não autenticado." }, { status: 401 });
+    if (!canAccessApi(String(token.perfil), path, req.method)) return NextResponse.json({ erro: "Sem permissão." }, { status: 403 });
+    return NextResponse.next();
   }
-
-  // Protege rotas admin (painel) — exceto os caminhos públicos de afiliados
-  const isRotaAdmin = ROTAS_ADMIN.some((rota) => pathname.startsWith(rota));
-  if (isRotaAdmin && !isAfiladoPublico && !pathname.startsWith("/afiliados/dashboard")) {
-    const token = await getToken({ req: request, secret: process.env.NEXTAUTH_SECRET });
-    if (!token) {
-      return NextResponse.redirect(new URL("/login", request.url));
-    }
-
-    if ((token as any).perfil === "VENDEDOR") {
-      const permitido = ROTAS_VENDEDOR.some(
-        (r) => pathname === r || pathname.startsWith(r + "/")
-      );
-      if (!permitido) {
-        return NextResponse.redirect(new URL("/pedidos", request.url));
-      }
-    }
+  const publicAffiliate = path === "/afiliados" || path === "/afiliados/login" || under(path, "/afiliados/cadastro");
+  if (ADMIN_ROUTES.some(base => under(path, base)) && !publicAffiliate) {
+    const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
+    const affiliatePortal = under(path, "/afiliados/dashboard");
+    if (!token) return NextResponse.redirect(new URL(affiliatePortal ? "/afiliados/login" : "/login", req.url));
+    const perfil = String(token.perfil);
+    if (affiliatePortal && perfil !== "AFILIADO") return NextResponse.redirect(new URL("/pedidos", req.url));
+    if (!affiliatePortal && perfil === "AFILIADO") return NextResponse.redirect(new URL("/afiliados/dashboard", req.url));
+    if (perfil === "VENDEDOR" && !["/pedidos", "/alcance", "/minha-senha"].some(base => under(path, base))) return NextResponse.redirect(new URL("/alcance", req.url));
+    if (perfil === "ESTOQUISTA" && !["/pedidos", "/estoque", "/produtos", "/minha-senha"].some(base => under(path, base))) return NextResponse.redirect(new URL("/pedidos", req.url));
   }
-
-  // Detecta catálogo pelo path: /atacado, /varejo, /fabrica
-  const segmento = pathname.split("/")[1]?.toLowerCase();
-  let catalogo = "VAREJO";
-  if (segmento === "atacado") catalogo = "ATACADO";
-  else if (segmento === "fabrica") catalogo = "FABRICA";
-  else if (segmento === "varejo") catalogo = "VAREJO";
-
-  // Se há slug de rastreamento na URL, seta cookie e retorna
-  if (slugRef) {
-    const res = NextResponse.next();
-    res.cookies.set("_ref", slugRef, { maxAge: 60 * 60 * 24 * 7, path: "/", sameSite: "lax", httpOnly: true });
-    res.headers.set("x-catalogo", catalogo);
-    res.headers.set("x-pathname", pathname);
-    return res;
-  }
-
-  const response = NextResponse.next();
-  response.headers.set("x-catalogo", catalogo);
-  response.headers.set("x-pathname", pathname);
-
-  return response;
+  return NextResponse.next();
 }
-
-export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico|api/auth).*)"],
-};
+export const config = { matcher: ["/((?!_next/static|_next/image|favicon.ico|api/auth).*)"] };

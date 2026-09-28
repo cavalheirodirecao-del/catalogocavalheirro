@@ -104,7 +104,7 @@ export function CartProvider({
   const totalItens = itens.reduce((acc, i) => acc + i.quantidade, 0);
 
   function totalValor(precos: Record<string, number>): number {
-    return itens.reduce((acc, i) => acc + (precos[i.varianteId] ?? 0) * i.quantidade, 0);
+    return itens.reduce((acc, i) => acc + (precos[i.varianteId] ?? i.precoUnitario) * i.quantidade, 0);
   }
 
   return (

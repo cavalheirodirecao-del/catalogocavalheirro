@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState, Suspense } from "react";
+import { useEffect, useState, useRef, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { formatarMoeda, gerarLinkWhatsApp } from "@/lib/utils";
+import { trackVisit, waitForTracking } from "@/components/catalogo/VisitTracker";
 import { ItemCarrinho } from "@/components/catalogo/CartProvider";
 import { TipoCatalogo } from "@prisma/client";
 
@@ -78,10 +79,12 @@ function CheckoutContent() {
   const [primeiraCompra, setPrimeiraCompra] = useState(false);
 
   // Rastreamento de afiliado via cookie _ref
-  const [refCookie, setRefCookie] = useState<string | null>(null);
+  const [vendedorVinculado, setVendedorVinculado] = useState<Vendedor | null>(null);
+  const checkoutKey = useRef<string>("");
+  const [checkoutPronto, setCheckoutPronto] = useState(false);
 
   // Outros
-  const [vendedorId, setVendedorId] = useState(vendedorParam ?? "");
+  const [vendedorId, setVendedorId] = useState("");
   const [obs, setObs] = useState("");
   const [enviando, setEnviando] = useState(false);
   const [erroEnvio, setErroEnvio] = useState("");
@@ -103,18 +106,25 @@ function CheckoutContent() {
       }
     } catch {}
 
-    // Lê cookie _ref para atribuição de afiliado (last-touch)
-    try {
-      const match = document.cookie.match(/(?:^|;\s*)_ref=([^;]+)/);
-      if (match && !vendedorParam) setRefCookie(decodeURIComponent(match[1]));
-    } catch {}
-
-    fetch("/api/checkout-dados").then(r => r.json()).then(data => {
-      setLojas(data.lojas ?? []);
-      setVendedores(data.vendedores ?? []);
-      setConfigGeral(data.configGeral ?? { taxaExcursao: 5, qtdMinimaAtacado: 15, qtdMinimaFabrica: 40 });
-    });
-  }, []);
+    // The attribution is read by the server from its HttpOnly cookie.
+    async function carregarCheckout() {
+      try {
+        checkoutKey.current = sessionStorage.getItem("cavalheiro_checkout_key") || crypto.randomUUID();
+        sessionStorage.setItem("cavalheiro_checkout_key", checkoutKey.current);
+        if (vendedorParam) await trackVisit("/" + catalogoParam.toLowerCase(), "vendedor=" + encodeURIComponent(vendedorParam));
+        await waitForTracking();
+        const response = await fetch("/api/checkout-dados?catalogo=" + catalogoParam);
+        if (!response.ok) throw new Error("Não foi possível carregar o checkout.");
+        const data = await response.json();
+        setLojas(data.lojas ?? []); setVendedores(data.vendedores ?? []);
+        setVendedorVinculado(data.vendedorVinculado ?? null);
+        if(data.vendedorVinculado) setVendedorId(data.vendedorVinculado.id);
+        setConfigGeral(data.configGeral ?? { taxaExcursao: 5, qtdMinimaAtacado: 15, qtdMinimaFabrica: 40 });
+        setCheckoutPronto(true);
+      } catch { setErroEnvio("Não foi possível carregar o checkout. Recarregue a página para tentar novamente."); }
+    }
+    void carregarCheckout();
+  }, [catalogoParam, vendedorParam]);
 
   // Calcula frete via Melhor Envio quando CEP atinge 8 dígitos
   useEffect(() => {
@@ -126,6 +136,7 @@ function CheckoutContent() {
     setCalculandoFrete(true);
 
     const itensPayload = itens.map(i => ({
+      varianteId: i.varianteId,
       quantidade: i.quantidade,
       pesoGramas: 300, // padrão — atualizar quando produtos tiverem peso
       alturaCm: 5,
@@ -137,7 +148,7 @@ function CheckoutContent() {
     fetch("/api/frete/calcular", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ cepDestino: cepLimpo, itens: itensPayload }),
+      body: JSON.stringify({ cepDestino: cepLimpo, itens: itensPayload, catalogo: catalogoParam, formaPagamento }),
     })
       .then(r => r.json())
       .then(data => {
@@ -146,7 +157,7 @@ function CheckoutContent() {
       })
       .catch(() => setFreteErro("Erro ao calcular frete."))
       .finally(() => setCalculandoFrete(false));
-  }, [cep, tipoEnvio, primeiraCompra]);
+  }, [cep, tipoEnvio, primeiraCompra, itens, formaPagamento, catalogoParam]);
 
   // Verifica primeira compra quando telefone tem 10+ dígitos
   useEffect(() => {
@@ -166,7 +177,7 @@ function CheckoutContent() {
 
   const valorFrete = (() => {
     if (tipoEnvio === "EXCURSAO" && cupomAplicado?.tipo !== "FRETE_GRATIS") return configGeral.taxaExcursao;
-    if (tipoEnvio === "CORREIOS" && !primeiraCompra && opcaoFreteSelecionada) return opcaoFreteSelecionada.preco;
+    if (tipoEnvio === "CORREIOS" && cupomAplicado?.tipo !== "FRETE_GRATIS" && !primeiraCompra && opcaoFreteSelecionada) return opcaoFreteSelecionada.preco;
     return 0;
   })();
 
@@ -175,7 +186,7 @@ function CheckoutContent() {
     if (cupomAplicado.tipo === "PERCENTUAL" && cupomAplicado.valor)
       desconto = (subtotal * cupomAplicado.valor) / 100;
     else if (cupomAplicado.tipo === "VALOR_FIXO" && cupomAplicado.valor)
-      desconto = cupomAplicado.valor;
+      desconto = Math.min(subtotal, cupomAplicado.valor);
   }
 
   const total = Math.max(0, subtotal + valorFrete - desconto);
@@ -191,10 +202,11 @@ function CheckoutContent() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (!checkoutPronto || enviando) return;
     setEnviando(true);
     setErroEnvio("");
 
-    const vendedorSelecionado = vendedores.find(v => v.id === vendedorId || v.slug === vendedorParam);
+    const vendedorSelecionado = vendedorVinculado ?? vendedores.find(v => v.id === vendedorId);
 
     // Monta dados de excursão
     const excursaoTexto = tipoEnvio === "EXCURSAO"
@@ -225,7 +237,8 @@ function CheckoutContent() {
       desconto,
       total,
       obs,
-      refSlug: vendedorParam ?? refCookie ?? null,
+      chaveCheckout: checkoutKey.current,
+      servicoFreteId: opcaoFreteSelecionada?.id ?? null,
       itens: itens.map(i => ({
         varianteId: i.varianteId,
         quantidade: i.quantidade,
@@ -234,10 +247,16 @@ function CheckoutContent() {
       })),
     };
 
+    try {
+    await waitForTracking();
     const res = await fetch("/api/pedidos", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
     const data = await res.json();
 
     if (!res.ok) {
+      if (data.itensAtualizados) {
+        const atualizados = itens.map(i => { const p = data.itensAtualizados.find((p: any) => p.varianteId === i.varianteId); return p ? {...i, precoUnitario: p.precoVista, precoPrazo: p.precoPrazo} : i; });
+        setItens(atualizados); localStorage.setItem(STORAGE_KEY, JSON.stringify({catalogo: catalogoParam, itens: atualizados}));
+      }
       if (res.status === 409 && data.itensInsuficientes) {
         const msgs = (data.itensInsuficientes as any[]).map((it: any) => {
           const itemCarrinho = itens.find(i => i.varianteId === it.varianteId);
@@ -257,18 +276,21 @@ function CheckoutContent() {
     if (data.numero) {
       const loja = lojas.find(l => l.id === lojaId);
       const excursaoLabel = excNome ? `${excNome} - ${excCidadeOrigem}` : undefined;
-      const whatsappUrl = vendedorSelecionado?.telefone
-        ? gerarLinkWhatsApp(vendedorSelecionado.telefone, {
+      const telefoneVendedor = data.vendedorTelefone ?? vendedorSelecionado?.telefone;
+      const whatsappUrl = telefoneVendedor
+        ? gerarLinkWhatsApp(telefoneVendedor, {
             numero: data.numero, nomeCliente: nome,
             itens: itens.map(i => ({ nome: i.produtoNome, cor: i.corNome, tamanho: i.tamanho, quantidade: i.quantidade })),
-            total, tipoEnvio, excursaoNome: excursaoLabel, lojaNome: loja?.nome, formaPagamento, catalogo: catalogoParam,
+            total: data.total, tipoEnvio, excursaoNome: excursaoLabel, lojaNome: loja?.nome, formaPagamento, catalogo: catalogoParam,
           })
         : null;
 
       localStorage.removeItem(STORAGE_KEY);
+      sessionStorage.removeItem("cavalheiro_checkout_key");
       setPedidoCriado({ numero: data.numero, whatsappUrl: whatsappUrl ?? "" });
     }
-    setEnviando(false);
+    } catch { setErroEnvio("Falha de conexão. Tente novamente; o mesmo pedido não será duplicado."); }
+    finally { setEnviando(false); }
   }
 
   if (pedidoCriado) {
@@ -357,9 +379,9 @@ function CheckoutContent() {
         </div>
 
         {/* ── Vendedor ──────────────────────────────── */}
-        {vendedorParam ? (
+        {vendedorVinculado ? (
           (() => {
-            const v = vendedores.find(v => v.slug === vendedorParam);
+            const v = vendedorVinculado;
             return v ? (
               <div className="bg-white rounded-xl border border-gray-100 p-4 shadow-sm flex items-center justify-between">
                 <div>
@@ -602,7 +624,7 @@ function CheckoutContent() {
           </div>
         )}
 
-        <button type="submit" disabled={enviando || itens.length === 0}
+        <button type="submit" disabled={!checkoutPronto || enviando || itens.length === 0}
           className="w-full bg-black text-white rounded-xl py-4 font-bold text-base hover:bg-gray-800 transition disabled:opacity-40">
           {enviando ? "Processando..." : "Confirmar Pedido"}
         </button>

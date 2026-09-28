@@ -1,3 +1,4 @@
+import { withApiAccess } from "@/lib/api-access";
 import { NextRequest, NextResponse } from "next/server";
 import { getToken } from "next-auth/jwt";
 import { createClient } from "@supabase/supabase-js";
@@ -11,7 +12,7 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
-export async function POST(request: NextRequest) {
+async function POSTHandler(request: NextRequest) {
   const token = await getToken({ req: request, secret: process.env.NEXTAUTH_SECRET });
   if (!token) return NextResponse.json({ erro: "Não autorizado" }, { status: 401 });
 
@@ -42,3 +43,5 @@ export async function POST(request: NextRequest) {
   const { data } = supabase.storage.from("uploads").getPublicUrl(filename);
   return NextResponse.json({ url: data.publicUrl });
 }
+
+export const POST = withApiAccess(POSTHandler);

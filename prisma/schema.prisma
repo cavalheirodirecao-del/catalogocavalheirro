@@ -533,6 +533,9 @@ model MovimentacaoEstoque {
 // ─────────────────────────────────────────
 
 model Pedido {
+  visitanteId String?
+  origemRastreamento String?
+  chaveCheckout String? @unique
   id     String @id @default(cuid())
   numero Int    @unique @default(autoincrement())
 
@@ -605,6 +608,10 @@ model ItemPedido {
 // ─────────────────────────────────────────
 
 model Visita {
+  visitanteId String?
+  @@index([vendedorId, criadoEm])
+  @@index([afiliadoId, criadoEm])
+  @@index([visitanteId])
   id         String       @id @default(cuid())
   catalogo   TipoCatalogo
   vendedorId String?

@@ -1,7 +1,8 @@
+import { withApiAccess } from "@/lib/api-access";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
-export async function GET() {
+async function GETHandler() {
   const produtos = await prisma.produto.findMany({
     orderBy: { criadoEm: "desc" },
     include: {
@@ -19,7 +20,7 @@ export async function GET() {
   return NextResponse.json(produtos);
 }
 
-export async function POST(request: NextRequest) {
+async function POSTHandler(request: NextRequest) {
   const body = await request.json();
   const {
     codigo, nome, descricao, descricaoCompleta, videoUrl, imagemPrincipal, tabelaMedidas,
@@ -87,3 +88,6 @@ export async function POST(request: NextRequest) {
 
   return NextResponse.json({ id: produto.id });
 }
+
+export const GET = withApiAccess(GETHandler);
+export const POST = withApiAccess(POSTHandler);

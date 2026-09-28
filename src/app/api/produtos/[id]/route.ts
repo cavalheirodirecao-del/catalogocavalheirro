@@ -1,7 +1,8 @@
+import { withApiAccess } from "@/lib/api-access";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
-export async function GET(_: NextRequest, { params }: { params: { id: string } }) {
+async function GETHandler(_: NextRequest, { params }: { params: { id: string } }) {
   const produto = await prisma.produto.findUnique({
     where: { id: params.id },
     include: {
@@ -20,7 +21,7 @@ export async function GET(_: NextRequest, { params }: { params: { id: string } }
   return NextResponse.json(produto);
 }
 
-export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
+async function PUTHandler(request: NextRequest, { params }: { params: { id: string } }) {
   try {
   const body = await request.json();
   const {
@@ -122,7 +123,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
   }
 }
 
-export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
+async function PATCHHandler(req: NextRequest, { params }: { params: { id: string } }) {
   try {
     const { ativo } = await req.json();
     const produto = await prisma.produto.update({
@@ -136,10 +137,15 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   }
 }
 
-export async function DELETE(_: NextRequest, { params }: { params: { id: string } }) {
+async function DELETEHandler(_: NextRequest, { params }: { params: { id: string } }) {
   await prisma.produto.update({
     where: { id: params.id },
     data: { ativo: false },
   });
   return NextResponse.json({ ok: true });
 }
+
+export const GET = withApiAccess(GETHandler);
+export const PUT = withApiAccess(PUTHandler);
+export const PATCH = withApiAccess(PATCHHandler);
+export const DELETE = withApiAccess(DELETEHandler);

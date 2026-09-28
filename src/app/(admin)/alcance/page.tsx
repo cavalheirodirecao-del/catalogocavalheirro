@@ -1,237 +1,66 @@
 "use client";
-
-import { useEffect, useState, useCallback } from "react";
-import { Signal, X } from "lucide-react";
-
-const selectCls = "border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black bg-white";
-
-function formatData(iso: string) {
-  return new Date(iso).toLocaleDateString("pt-BR");
-}
-
-interface RankingEntry {
-  id: string;
-  slug: string;
-  nome: string;
-  tipo: "VENDEDOR" | "AFILIADO";
-  totalVisitas: number;
-  ipsUnicos: number;
-  ultimaVisita: string;
-  porCatalogo: { VAREJO: number; ATACADO: number; FABRICA: number };
-}
-
-interface DashData {
-  ranking: RankingEntry[];
-  totais: { totalVisitas: number; ipsUnicos: number; vendedores: number; afiliados: number };
-}
-
+import { useEffect, useState } from "react";
+import Link from "next/link";
+const money = (n: number) => new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(n);
 export default function AlcancePage() {
-  const [data, setData]     = useState<DashData | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  // Filtros
-  const [dataInicio, setDataInicio] = useState("");
-  const [dataFim, setDataFim]       = useState("");
-  const [catalogo, setCatalogo]     = useState("");
-  const [tipo, setTipo]             = useState("");
-
-  // Ordenação local
-  const [sortBy, setSortBy] = useState<"ipsUnicos" | "totalVisitas">("ipsUnicos");
-
-  const carregar = useCallback(async () => {
-    setLoading(true);
-    const params = new URLSearchParams();
-    if (dataInicio) params.set("dataInicio", dataInicio);
-    if (dataFim)    params.set("dataFim", dataFim);
-    if (catalogo)   params.set("catalogo", catalogo);
-    if (tipo)       params.set("tipo", tipo);
-    const res  = await fetch(`/api/admin/alcance?${params}`);
-    const json = await res.json();
-    setData(json);
-    setLoading(false);
-  }, [dataInicio, dataFim, catalogo, tipo]);
-
-  useEffect(() => { carregar(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
-
-  async function limpar() {
-    setDataInicio(""); setDataFim(""); setCatalogo(""); setTipo("");
-    setLoading(true);
-    const res  = await fetch("/api/admin/alcance");
-    setData(await res.json());
-    setLoading(false);
+  const [data,setData] = useState<any>(null);
+  const [error,setError] = useState("");
+  const [loading,setLoading] = useState(true);
+  const [filters,setFilters] = useState({ dataInicio:"", dataFim:"", catalogo:"", tipo:"" });
+  const [copied,setCopied] = useState("");
+  async function load(values = filters) {
+    setLoading(true); setError("");
+    try {
+      const query = new URLSearchParams(Object.entries(values).filter(([,v])=>!!v));
+      const response = await fetch("/api/admin/alcance?" + query);
+      const json = await response.json();
+      if (!response.ok) throw new Error(json.erro ?? "Não foi possível carregar os resultados.");
+      setData(json);
+    } catch(e) { setError(e instanceof Error ? e.message : "Erro de conexão."); }
+    finally { setLoading(false); }
   }
-
-  const temFiltro = dataInicio || dataFim || catalogo || tipo;
-
-  const ranking = data
-    ? [...data.ranking].sort((a, b) => b[sortBy] - a[sortBy])
-    : [];
-
-  return (
-    <div className="space-y-6">
-      {/* Cabeçalho */}
-      <div>
-        <h1 className="text-2xl font-bold flex items-center gap-2">
-          <Signal size={22} /> Alcance
-        </h1>
-        <p className="text-gray-500 text-sm mt-1">
-          Quantas pessoas cada vendedor ou afiliado trouxe ao catálogo — independente de venda
-        </p>
-      </div>
-
-      {/* Filtros */}
-      <div className="bg-white rounded-xl border border-gray-200 p-4 space-y-3">
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-          <input type="date" value={dataInicio} onChange={e => setDataInicio(e.target.value)}
-            className={selectCls} title="Data início" />
-          <input type="date" value={dataFim} onChange={e => setDataFim(e.target.value)}
-            className={selectCls} title="Data fim" />
-          <select value={catalogo} onChange={e => setCatalogo(e.target.value)} className={selectCls}>
-            <option value="">Todos os catálogos</option>
-            <option value="VAREJO">Varejo</option>
-            <option value="ATACADO">Atacado</option>
-            <option value="FABRICA">Fábrica</option>
-          </select>
-          <select value={tipo} onChange={e => setTipo(e.target.value)} className={selectCls}>
-            <option value="">Vendedores e Afiliados</option>
-            <option value="VENDEDOR">Vendedores</option>
-            <option value="AFILIADO">Afiliados</option>
-          </select>
-        </div>
-        <div className="flex items-center gap-3">
-          <button onClick={carregar}
-            className="bg-black text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-800 transition">
-            Filtrar
-          </button>
-          {temFiltro && (
-            <button onClick={limpar}
-              className="inline-flex items-center gap-1 text-xs text-gray-500 hover:text-black transition">
-              <X size={12} /> Limpar filtros
-            </button>
-          )}
-        </div>
-      </div>
-
-      {loading ? (
-        <div className="flex justify-center py-16">
-          <div className="w-6 h-6 border-2 border-gray-200 border-t-gray-800 rounded-full animate-spin" />
-        </div>
-      ) : data && (
-        <>
-          {/* Cards de resumo */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="bg-white rounded-xl border border-gray-200 p-4">
-              <p className="text-xs text-gray-400 mb-1">Total de visitas</p>
-              <p className="text-3xl font-bold text-gray-900">{data.totais.totalVisitas}</p>
-              <p className="text-xs text-gray-400 mt-1">acessos registrados</p>
-            </div>
-            <div className="bg-white rounded-xl border border-gray-200 p-4">
-              <p className="text-xs text-gray-400 mb-1">IPs únicos</p>
-              <p className="text-3xl font-bold text-black">{data.totais.ipsUnicos}</p>
-              <p className="text-xs text-gray-400 mt-1">dispositivos diferentes</p>
-            </div>
-            <div className="bg-white rounded-xl border border-gray-200 p-4">
-              <p className="text-xs text-gray-400 mb-1">Vendedores ativos</p>
-              <p className="text-3xl font-bold text-blue-600">{data.totais.vendedores}</p>
-              <p className="text-xs text-gray-400 mt-1">com visitas no período</p>
-            </div>
-            <div className="bg-white rounded-xl border border-gray-200 p-4">
-              <p className="text-xs text-gray-400 mb-1">Afiliados ativos</p>
-              <p className="text-3xl font-bold text-purple-600">{data.totais.afiliados}</p>
-              <p className="text-xs text-gray-400 mt-1">com visitas no período</p>
-            </div>
-          </div>
-
-          {/* Ranking */}
-          {ranking.length > 0 ? (
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <h2 className="font-semibold text-gray-800">Ranking de Alcance</h2>
-                <div className="flex items-center gap-1 text-xs">
-                  <span className="text-gray-400">Ordenar por:</span>
-                  <button onClick={() => setSortBy("ipsUnicos")}
-                    className={`px-2 py-1 rounded font-medium transition ${sortBy === "ipsUnicos" ? "bg-black text-white" : "text-gray-500 hover:text-black"}`}>
-                    IPs únicos
-                  </button>
-                  <button onClick={() => setSortBy("totalVisitas")}
-                    className={`px-2 py-1 rounded font-medium transition ${sortBy === "totalVisitas" ? "bg-black text-white" : "text-gray-500 hover:text-black"}`}>
-                    Total visitas
-                  </button>
-                </div>
-              </div>
-
-              <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr className="border-b border-gray-100 bg-gray-50">
-                        <th className="text-left px-4 py-3 font-medium text-gray-600 w-8">#</th>
-                        <th className="text-left px-4 py-3 font-medium text-gray-600">Nome</th>
-                        <th className="text-left px-4 py-3 font-medium text-gray-600">Tipo</th>
-                        <th className="text-left px-4 py-3 font-medium text-gray-600">Slug</th>
-                        <th className="text-center px-4 py-3 font-medium text-gray-600">IPs únicos</th>
-                        <th className="text-center px-4 py-3 font-medium text-gray-600">Total</th>
-                        <th className="text-center px-4 py-3 font-medium text-gray-500 text-xs">Varejo</th>
-                        <th className="text-center px-4 py-3 font-medium text-gray-500 text-xs">Atacado</th>
-                        <th className="text-center px-4 py-3 font-medium text-gray-500 text-xs">Fábrica</th>
-                        <th className="text-right px-4 py-3 font-medium text-gray-600">Última visita</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-50">
-                      {ranking.map((entry, i) => (
-                        <tr key={entry.id} className="hover:bg-gray-50">
-                          <td className="px-4 py-3 text-gray-400 font-mono text-xs">{i + 1}</td>
-                          <td className="px-4 py-3 font-semibold text-gray-900">{entry.nome}</td>
-                          <td className="px-4 py-3">
-                            {entry.tipo === "VENDEDOR" ? (
-                              <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-blue-50 text-blue-700 border border-blue-100">
-                                Vendedor
-                              </span>
-                            ) : (
-                              <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-purple-50 text-purple-700 border border-purple-100">
-                                Afiliado
-                              </span>
-                            )}
-                          </td>
-                          <td className="px-4 py-3">
-                            <code className="text-xs bg-gray-100 px-1.5 py-0.5 rounded text-gray-600">
-                              {entry.slug}
-                            </code>
-                          </td>
-                          <td className="px-4 py-3 text-center">
-                            <span className="font-bold text-base text-gray-900">{entry.ipsUnicos}</span>
-                          </td>
-                          <td className="px-4 py-3 text-center text-gray-500">{entry.totalVisitas}</td>
-                          <td className="px-4 py-3 text-center text-xs text-gray-500">
-                            {entry.porCatalogo.VAREJO || "—"}
-                          </td>
-                          <td className="px-4 py-3 text-center text-xs text-gray-500">
-                            {entry.porCatalogo.ATACADO || "—"}
-                          </td>
-                          <td className="px-4 py-3 text-center text-xs text-gray-500">
-                            {entry.porCatalogo.FABRICA || "—"}
-                          </td>
-                          <td className="px-4 py-3 text-right text-xs text-gray-400">
-                            {formatData(entry.ultimaVisita)}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </div>
-          ) : (
-            <div className="bg-white rounded-xl border border-gray-200 p-10 text-center">
-              <Signal size={36} className="mx-auto mb-3 text-gray-200" />
-              <p className="text-sm text-gray-400 font-medium">Nenhuma visita registrada no período.</p>
-              <p className="text-xs text-gray-400 mt-1">
-                As visitas começam a aparecer quando alguém acessa o catálogo via link de vendedor ou afiliado.
-              </p>
-            </div>
-          )}
-        </>
-      )}
-    </div>
-  );
+  useEffect(()=>{ void load(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  async function copy(path: string) {
+    try { await navigator.clipboard.writeText(window.location.origin + path); setCopied(path); }
+    catch { setError("Não foi possível copiar. Selecione o endereço do link."); }
+  }
+  return <div className="space-y-6">
+    <div><h1 className="text-2xl font-bold">{data?.somenteMeus ? "Meus resultados" : "Alcance e vendas"}</h1>
+      <p className="text-sm text-gray-500 mt-1">Acompanhe quem chegou pelos links e os pedidos de cada vendedor ou afiliado.</p></div>
+    {data?.links?.length > 0 && <section className="bg-white border rounded-xl p-4 space-y-3">
+      <h2 className="font-semibold">Meus links para compartilhar</h2>
+      {data.links.map((l:any)=><div key={l.catalogo} className="flex gap-3 items-center flex-wrap">
+        <span className="text-sm font-medium">{l.catalogo}</span><a className="text-sm underline break-all" href={l.caminho} target="_blank" rel="noreferrer">{typeof window !== "undefined" ? window.location.origin : ""}{l.caminho}</a>
+        <button onClick={()=>copy(l.caminho)} className="text-sm border rounded px-3 py-1">{copied===l.caminho ? "Copiado" : "Copiar link"}</button>
+      </div>)}
+    </section>}
+    <form onSubmit={e=>{e.preventDefault(); void load();}} className="bg-white border rounded-xl p-4 flex gap-3 flex-wrap items-end">
+      <label className="text-sm">De<input className="block border rounded p-2" type="date" value={filters.dataInicio} onChange={e=>setFilters({...filters,dataInicio:e.target.value})}/></label>
+      <label className="text-sm">Até<input className="block border rounded p-2" type="date" value={filters.dataFim} onChange={e=>setFilters({...filters,dataFim:e.target.value})}/></label>
+      <label className="text-sm">Catálogo<select className="block border rounded p-2" value={filters.catalogo} onChange={e=>setFilters({...filters,catalogo:e.target.value})}>
+        <option value="">Todos</option><option value="VAREJO">Varejo</option><option value="ATACADO">Atacado</option><option value="FABRICA">Grandes clientes</option></select></label>
+      {!data?.somenteMeus && <label className="text-sm">Participantes<select className="block border rounded p-2" value={filters.tipo} onChange={e=>setFilters({...filters,tipo:e.target.value})}>
+        <option value="">Vendedores e afiliados</option><option value="VENDEDOR">Vendedores</option><option value="AFILIADO">Afiliados</option></select></label>}
+      <button disabled={loading} className="bg-black text-white rounded px-4 py-2 disabled:opacity-50">Filtrar</button>
+      <button type="button" className="border rounded px-4 py-2" onClick={()=>{const empty={dataInicio:"",dataFim:"",catalogo:"",tipo:""};setFilters(empty);void load(empty);}}>Limpar</button>
+    </form>
+    {error && <p role="alert" className="text-red-700 bg-red-50 rounded p-3">{error}</p>}
+    {loading ? <p role="status">Carregando resultados...</p> : data && !error && <>
+      <div className="grid grid-cols-2 xl:grid-cols-5 gap-3">{[
+        ["Visitas", data.totais.totalVisitas], ["Visitantes por navegador", data.totais.visitantesUnicos], ["Pedidos recebidos",data.totais.totalPedidos], ["Compras confirmadas",data.totais.compras], ["Valor das compras",money(data.totais.valorCompras)]
+      ].map(([label,value])=><div key={label} className="bg-white border rounded-xl p-4"><p className="text-xs text-gray-500">{label}</p><p className="text-2xl font-bold mt-2">{value}</p></div>)}</div>
+      <div className="bg-white border rounded-xl overflow-x-auto"><table className="w-full text-sm whitespace-nowrap"><thead className="bg-gray-50 text-left"><tr>
+        {["Vendedor / afiliado","Visitas","Visitantes","Pedidos","Pedidos pelo link","Compras","Compras pelo link","Pendentes","Cancelados","Valor das compras"].map(x=><th key={x} className="p-3">{x}</th>)}
+      </tr></thead><tbody>{data.ranking.map((r:any)=><tr key={r.tipo+r.id} className="border-t">
+        <td className="p-3"><p className="font-semibold">{r.nome}</p><p className="text-xs text-gray-500">{r.tipo} · {r.slug}</p>{r.pedidosLegados>0 && <p className="text-xs text-gray-500">{r.pedidosLegados} pedidos antigos sem origem identificada</p>}</td>
+        <td className="p-3">{r.totalVisitas}</td><td className="p-3">{r.visitantesUnicos}{r.ipsLegados>0 && <p className="text-xs text-gray-500">+ {r.ipsLegados} IPs históricos</p>}</td>
+        <td className="p-3">{r.totalPedidos}</td><td className="p-3">{r.pedidosViaLink}</td><td className="p-3 font-semibold">{r.compras}</td><td className="p-3">{r.comprasViaLink}</td><td className="p-3">{r.pendentes}</td><td className="p-3">{r.cancelados}</td><td className="p-3">{money(r.valorCompras)}</td>
+      </tr>)}</tbody></table>{data.ranking.length===0 && <p className="p-8 text-center text-gray-500">Nenhum resultado para os filtros selecionados.</p>}</div>
+      <div className="text-xs text-gray-500 space-y-2">
+        <p>Uma visita por sessão de 30 minutos, catálogo e origem. Visitantes são navegadores identificados por cookie: trocar de aparelho ou apagar cookies pode contar novamente. Dados antigos por IP ficam separados.</p>
+        <p>Compras confirmadas incluem confirmado, separando, enviado e concluído. Pendentes e cancelados não entram no valor de compras. O período usa a data de criação do pedido e o horário de Brasília.</p>
+        <p>O último link válido fica associado por 7 dias. Compras pelo link são identificadas a partir desta atualização; pedidos antigos não recebem uma origem presumida.</p>
+      </div><Link className="inline-block underline text-sm" href="/pedidos">Ver pedidos</Link>
+    </>}
+  </div>;
 }

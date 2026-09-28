@@ -1,8 +1,9 @@
+import { withApiAccess } from "@/lib/api-access";
 import { NextRequest, NextResponse } from "next/server";
 import { getToken } from "next-auth/jwt";
-import prisma from "@/lib/prisma";
+import { prisma } from "@/lib/prisma";
 
-export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
+async function GETHandler(request: NextRequest, { params }: { params: { id: string } }) {
   const token = await getToken({ req: request, secret: process.env.NEXTAUTH_SECRET });
   if (!token) return NextResponse.json({ erro: "Não autorizado" }, { status: 401 });
 
@@ -22,7 +23,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
   return NextResponse.json(usuario);
 }
 
-export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
+async function PUTHandler(request: NextRequest, { params }: { params: { id: string } }) {
   const token = await getToken({ req: request, secret: process.env.NEXTAUTH_SECRET });
   if (!token || (token as any).perfil !== "ADMIN") {
     return NextResponse.json({ erro: "Não autorizado" }, { status: 401 });
@@ -38,7 +39,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
   return NextResponse.json({ ok: true, usuario });
 }
 
-export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
+async function DELETEHandler(request: NextRequest, { params }: { params: { id: string } }) {
   const token = await getToken({ req: request, secret: process.env.NEXTAUTH_SECRET });
   if (!token || (token as any).perfil !== "ADMIN") {
     return NextResponse.json({ erro: "Não autorizado" }, { status: 401 });
@@ -51,3 +52,7 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
 
   return NextResponse.json({ ok: true });
 }
+
+export const GET = withApiAccess(GETHandler);
+export const PUT = withApiAccess(PUTHandler);
+export const DELETE = withApiAccess(DELETEHandler);

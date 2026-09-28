@@ -1,7 +1,8 @@
+import { withApiAccess } from "@/lib/api-access";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
-export async function GET(req: NextRequest) {
+async function GETHandler(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const telefone = searchParams.get("telefone");
   const catalogo = searchParams.get("catalogo");
@@ -9,6 +10,7 @@ export async function GET(req: NextRequest) {
   // Busca pública por telefone (para login rápido no RegistroWall)
   if (telefone && catalogo) {
     const normalizado = telefone.replace(/\D/g, "");
+    if (normalizado.length < 10 || !["ATACADO", "FABRICA"].includes(catalogo)) return NextResponse.json({ erro: "Dados inválidos." }, { status: 400 });
     const lead = await prisma.leadAtacado.findFirst({
       where: {
         telefone: { contains: normalizado },
@@ -26,7 +28,7 @@ export async function GET(req: NextRequest) {
   return NextResponse.json(leads);
 }
 
-export async function POST(req: NextRequest) {
+async function POSTHandler(req: NextRequest) {
   try {
     const { nome, telefone, instagram, catalogo } = await req.json();
 
@@ -68,3 +70,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }
+
+export const GET = withApiAccess(GETHandler);
+export const POST = withApiAccess(POSTHandler);

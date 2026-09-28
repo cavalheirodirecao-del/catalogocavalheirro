@@ -32,8 +32,8 @@ export async function dispararWebhook(evento: EventoWebhook, pedido: PedidoWebho
       headers["Authorization"] = `Bearer ${config.webhookDataCrazyToken}`;
     }
 
-    // Fire-and-forget — não bloqueia a resposta
-    fetch(config.webhookDataCrazyUrl, {
+    // Await completion so serverless execution cannot discard the delivery.
+    await fetch(config.webhookDataCrazyUrl, {
       method: "POST",
       headers,
       body: JSON.stringify(payload),

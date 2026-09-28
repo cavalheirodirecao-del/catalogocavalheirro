@@ -1,3 +1,4 @@
+import { currentActor, withApiAccess } from "@/lib/api-access";
 import { NextRequest, NextResponse } from "next/server";
 import { getToken } from "next-auth/jwt";
 import { prisma } from "@/lib/prisma";
@@ -5,7 +6,7 @@ import { gerarSlugAfiliado } from "@/lib/afiliados";
 import bcrypt from "bcryptjs";
 
 // GET /api/afiliados — listagem admin
-export async function GET(req: NextRequest) {
+async function GETHandler(req: NextRequest) {
   const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
   if (!token) return NextResponse.json({ erro: "Não autorizado" }, { status: 401 });
 
@@ -25,7 +26,7 @@ export async function GET(req: NextRequest) {
 }
 
 // POST /api/afiliados — inscrição pública
-export async function POST(req: NextRequest) {
+async function POSTHandler(req: NextRequest) {
   const body = await req.json();
   const { nome, email, senha, telefone, instagram, cidade, estado, comoPromover, tipo, nicho, seguidores } = body;
 
@@ -52,8 +53,8 @@ export async function POST(req: NextRequest) {
   // adminCreate=true: cadastro direto pelo admin, já aprovado — exige token ADMIN
   const adminCreate = body.adminCreate === true;
   if (adminCreate) {
-    const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
-    if (!token || (token as any).perfil !== "ADMIN") {
+    const actor = await currentActor(req);
+    if (actor?.perfil !== "ADMIN") {
       return NextResponse.json({ erro: "Não autorizado." }, { status: 401 });
     }
   }
@@ -88,3 +89,6 @@ export async function POST(req: NextRequest) {
 
   return NextResponse.json({ ok: true, slug: afiliado.slug }, { status: 201 });
 }
+
+export const GET = withApiAccess(GETHandler);
+export const POST = withApiAccess(POSTHandler);

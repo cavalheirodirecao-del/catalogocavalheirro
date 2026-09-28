@@ -1,7 +1,8 @@
+import { withApiAccess } from "@/lib/api-access";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
-export async function GET(req: NextRequest) {
+async function GETHandler(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const dataInicio  = searchParams.get("dataInicio");
   const dataFim     = searchParams.get("dataFim");
@@ -77,3 +78,5 @@ export async function GET(req: NextRequest) {
 
   return NextResponse.json({ totalPedidos, volumeTotal, atrelados, naoAtrelados, ranking, naoRegistradas });
 }
+
+export const GET = withApiAccess(GETHandler);

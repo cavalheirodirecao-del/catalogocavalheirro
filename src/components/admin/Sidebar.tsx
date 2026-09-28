@@ -116,6 +116,7 @@ export default function Sidebar() {
         {isVendedor && (
           <>
             <MenuItem href="/pedidos" label="Pedidos" icon={ShoppingCart} />
+            <MenuItem href="/alcance" label="Meus resultados" icon={Signal} />
             <MenuItem href="/minha-senha" label="Minha Senha" icon={KeyRound} />
           </>
         )}

@@ -1,20 +1,21 @@
+import { withApiAccess } from "@/lib/api-access";
 import { NextRequest, NextResponse } from "next/server";
 import { getToken } from "next-auth/jwt";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 
-export async function GET(req: NextRequest) {
+async function GETHandler(req: NextRequest) {
   const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
   if (!token) return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
 
   const vendedores = await prisma.vendedor.findMany({
-    include: { usuario: true, links: true },
+    include: { usuario: { select: { id: true, nome: true, email: true, ativo: true, perfil: true } }, links: true },
     orderBy: { usuario: { nome: "asc" } },
   });
   return NextResponse.json(vendedores);
 }
 
-export async function POST(req: NextRequest) {
+async function POSTHandler(req: NextRequest) {
   const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
   if (!token || (token as any).perfil !== "ADMIN") {
     return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
@@ -72,3 +73,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }
+
+export const GET = withApiAccess(GETHandler);
+export const POST = withApiAccess(POSTHandler);

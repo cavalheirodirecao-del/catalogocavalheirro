@@ -1,7 +1,8 @@
+import { withApiAccess } from "@/lib/api-access";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
-export async function GET() {
+async function GETHandler() {
   const grades = await prisma.grade.findMany({
     include: { itens: { orderBy: { ordem: "asc" } } },
     orderBy: { nome: "asc" },
@@ -9,7 +10,7 @@ export async function GET() {
   return NextResponse.json(grades);
 }
 
-export async function POST(request: NextRequest) {
+async function POSTHandler(request: NextRequest) {
   const { nome, tipo, itens } = await request.json();
   if (!nome?.trim() || !tipo || !itens?.length) {
     return NextResponse.json({ erro: "Dados incompletos." }, { status: 400 });
@@ -27,3 +28,6 @@ export async function POST(request: NextRequest) {
   });
   return NextResponse.json(grade);
 }
+
+export const GET = withApiAccess(GETHandler);
+export const POST = withApiAccess(POSTHandler);

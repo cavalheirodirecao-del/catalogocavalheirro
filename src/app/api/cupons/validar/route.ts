@@ -1,7 +1,8 @@
+import { withApiAccess } from "@/lib/api-access";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
-export async function GET(request: NextRequest) {
+async function GETHandler(request: NextRequest) {
   const codigo = request.nextUrl.searchParams.get("codigo");
   if (!codigo) return NextResponse.json({ erro: "Código obrigatório." }, { status: 400 });
 
@@ -23,3 +24,5 @@ export async function GET(request: NextRequest) {
     valor: cupom.valor ? Number(cupom.valor) : null,
   });
 }
+
+export const GET = withApiAccess(GETHandler);

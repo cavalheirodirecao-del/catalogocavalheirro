@@ -3,8 +3,6 @@ import { notFound } from "next/navigation";
 import CatalogoClient from "@/components/catalogo/CatalogoClient";
 
 export const revalidate = 300;
-import { headers } from "next/headers";
-import { logVisita } from "@/lib/visitas";
 
 interface Props {
   searchParams: { vendedor?: string; ref?: string };
@@ -12,13 +10,12 @@ interface Props {
 
 export default async function AtacadoPage({ searchParams }: Props) {
   const vendedorSlug = searchParams.vendedor ?? null;
-  const afiliadoSlug = searchParams.ref ?? null;
 
   // Valida vendedor se informado
   let vendedorNome: string | null = null;
   if (vendedorSlug) {
     const vendedor = await prisma.vendedor.findUnique({
-      where: { slug: vendedorSlug },
+      where: { slug: vendedorSlug, ativo: true, usuario: { ativo: true } },
       include: {
         usuario: true,
         links: { where: { catalogo: "ATACADO", ativo: true } },
@@ -59,10 +56,6 @@ export default async function AtacadoPage({ searchParams }: Props) {
       orderBy: { nome: "asc" },
     }),
   ]);
-
-  // Log da visita (fire-and-forget)
-  const ip = headers().get("x-forwarded-for")?.split(",")[0].trim() ?? null;
-  logVisita("ATACADO", ip, vendedorSlug, afiliadoSlug).catch(() => {});
 
   return (
     <CatalogoClient

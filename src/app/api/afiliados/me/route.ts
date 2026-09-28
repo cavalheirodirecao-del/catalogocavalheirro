@@ -1,9 +1,10 @@
+import { withApiAccess } from "@/lib/api-access";
 import { NextRequest, NextResponse } from "next/server";
 import { getToken } from "next-auth/jwt";
 import { prisma } from "@/lib/prisma";
 import { calcularTierAfiliado, calcularComissao } from "@/lib/afiliados";
 
-export async function GET(req: NextRequest) {
+async function GETHandler(req: NextRequest) {
   const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
   if (!token || (token as any).perfil !== "AFILIADO") {
     return NextResponse.json({ erro: "Não autenticado." }, { status: 401 });
@@ -27,7 +28,7 @@ export async function GET(req: NextRequest) {
   const pedidosMes = await prisma.pedido.findMany({
     where: {
       afiliadoId: afiliado.id,
-      status: { in: ["CONFIRMADO", "ENVIADO", "CONCLUIDO"] },
+      status: { in: ["CONFIRMADO", "SEPARANDO", "ENVIADO", "CONCLUIDO"] },
       criadoEm: { gte: inicioMes, lte: fimMes },
     },
     select: {
@@ -74,3 +75,5 @@ export async function GET(req: NextRequest) {
     pagamentos: afiliado.pagamentos,
   });
 }
+
+export const GET = withApiAccess(GETHandler);

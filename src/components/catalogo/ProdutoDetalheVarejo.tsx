@@ -71,7 +71,7 @@ function CarrinhoDrawer({ precos }: { precos: Record<string, number> }) {
                   <div className="flex-1">
                     <p className="text-sm font-medium leading-tight">{item.produtoNome}</p>
                     <p className="text-xs text-gray-400">{item.tamanho} · {item.corNome}</p>
-                    <p className="text-sm font-bold mt-1">{formatarMoeda((precos[item.varianteId] ?? 0) * item.quantidade)}</p>
+                    <p className="text-sm font-bold mt-1">{formatarMoeda((precos[item.varianteId] ?? item.precoUnitario) * item.quantidade)}</p>
                     <div className="flex items-center gap-2 mt-1">
                       <button onClick={() => alterarQtd(item.varianteId, item.quantidade - 1)} className="w-6 h-6 rounded border border-gray-200 flex items-center justify-center hover:bg-gray-100"><Minus size={10} /></button>
                       <span className="text-sm font-medium w-6 text-center">{item.quantidade}</span>
@@ -98,7 +98,7 @@ function CarrinhoDrawer({ precos }: { precos: Record<string, number> }) {
 
 // ─── Inner ────────────────────────────────────────────────
 function VarejoDetalheInner({ produto, similares }: Omit<Props, "vendedorSlug" | "catalogo">) {
-  const { adicionar, totalItens } = useCart();
+  const { adicionar, totalItens, itens } = useCart();
   const youtubeId = produto.videoUrl ? getYouTubeId(produto.videoUrl) : null;
 
   type Tab = "foto" | "video";
@@ -135,17 +135,17 @@ function VarejoDetalheInner({ produto, similares }: Omit<Props, "vendedorSlug" |
     .sort((a, b) => a.gradeItem.ordem - b.gradeItem.ordem) ?? [];
 
   const disponivel = tamSelecionado
-    ? Math.max(0, (tamSelecionado.estoque?.quantidade ?? 0) - (tamSelecionado.estoque?.pendente ?? 0))
+    ? Math.max(0, (tamSelecionado.estoque?.quantidade ?? 0) - (tamSelecionado.estoque?.pendente ?? 0) - (itens.find(i => i.varianteId === tamSelecionado.id)?.quantidade ?? 0))
     : 0;
 
   useEffect(() => {
     if (tamSelecionado && disponivel > 0) {
       setQuantidade(q => Math.min(q, disponivel));
     }
-  }, [tamSelecionado]);
+  }, [tamSelecionado, disponivel]);
 
   function handleAdicionar() {
-    if (!tamSelecionado || !corSelecionada) return;
+    if (!tamSelecionado || !corSelecionada || disponivel <= 0) return;
     const img = corSelecionada.imagens.find(i => i.principal)?.url ?? corSelecionada.imagens[0]?.url ?? produto.imagemPrincipal ?? IMG_PADRAO;
     adicionar({
       varianteId: tamSelecionado.id,
@@ -155,7 +155,7 @@ function VarejoDetalheInner({ produto, similares }: Omit<Props, "vendedorSlug" |
       corNome: corSelecionada.nome,
       tamanho: tamSelecionado.gradeItem.valor,
       imagemUrl: img,
-      quantidade,
+      quantidade: Math.min(quantidade, disponivel),
       precoUnitario: produto.precoVista,
       precoPrazo: produto.precoPrazo,
     });
@@ -169,15 +169,15 @@ function VarejoDetalheInner({ produto, similares }: Omit<Props, "vendedorSlug" |
     <div className="min-h-screen bg-white pb-12">
 
       {/* Header simples */}
-      <header className="bg-black text-white px-4 h-14 flex items-center justify-between sticky top-0 z-30">
-        <Link href="/varejo" className="inline-flex items-center gap-1 text-sm text-white/70 hover:text-white transition">
+      <header className="bg-white text-black border-b px-4 h-14 flex items-center justify-between">
+        <Link href="/varejo" className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-black transition">
           <ChevronLeft size={16} /> Voltar
         </Link>
-        <p className="font-bold">Varejo</p>
+        <p className="text-xs uppercase tracking-[0.2em] text-gray-500">Coleção Cavalheiro</p>
         <CarrinhoDrawer precos={precos} />
       </header>
 
-      <div className="max-w-5xl mx-auto px-4 py-6 grid grid-cols-1 md:grid-cols-2 gap-8">
+      <div className="max-w-7xl mx-auto px-4 py-6 grid grid-cols-1 lg:grid-cols-[1.15fr_1fr] gap-8 lg:gap-16">
 
         {/* ── Galeria ─────────────────────────────────── */}
         <div className="flex gap-3">
@@ -233,12 +233,12 @@ function VarejoDetalheInner({ produto, similares }: Omit<Props, "vendedorSlug" |
         </div>
 
         {/* ── Info ────────────────────────────────────── */}
-        <div className="space-y-5">
+        <div className="space-y-6 lg:sticky lg:top-24 self-start">
           <div>
             <p className="text-xs text-gray-400 font-mono">{produto.codigo}</p>
-            <h1 className="text-2xl font-bold mt-1 leading-tight">{produto.nome}</h1>
+            <h1 className="text-3xl font-semibold mt-2 leading-tight tracking-tight">{produto.nome}</h1>
             <div className="mt-3">
-              <p className="text-3xl font-bold">{formatarMoeda(produto.precoVista)}</p>
+              <p className="text-3xl font-bold">{formatarMoeda(produto.precoVista)} <span className="text-sm font-normal text-gray-500">à vista</span></p>
               <p className="text-sm text-gray-400 mt-0.5">{formatarMoeda(produto.precoPrazo)} a prazo</p>
             </div>
             {produto.descricao && <p className="text-sm text-gray-500 mt-2">{produto.descricao}</p>}
@@ -259,8 +259,8 @@ function VarejoDetalheInner({ produto, similares }: Omit<Props, "vendedorSlug" |
               </p>
               <div className="flex gap-2 flex-wrap">
                 {produto.cores.map(cor => (
-                  <button key={cor.id} onClick={() => selecionarCor(cor)} title={cor.nome}
-                    className={`w-9 h-9 rounded-full border-4 transition ${corSelecionada?.id === cor.id ? "border-black scale-110" : "border-white shadow-md hover:scale-105"}`}
+                  <button key={cor.id} onClick={() => selecionarCor(cor)} title={cor.nome} aria-label={"Cor " + cor.nome} aria-pressed={corSelecionada?.id === cor.id}
+                    className={`w-11 h-11 rounded-full border-4 transition ${corSelecionada?.id === cor.id ? "border-black scale-110" : "border-white shadow-md hover:scale-105"}`}
                     style={{ backgroundColor: cor.hexCor ?? "#ccc" }} />
                 ))}
               </div>
@@ -273,9 +273,9 @@ function VarejoDetalheInner({ produto, similares }: Omit<Props, "vendedorSlug" |
               Tamanho: {tamSelecionado && <span className="font-normal text-gray-500">{tamSelecionado.gradeItem.valor}</span>}
             </p>
             <div className="flex gap-2 flex-wrap">
-              {variantesDisponiveis.map(v => (
-                <button key={v.id} onClick={() => setTamSelecionado(v)}
-                  className={`min-w-[44px] px-3 py-2 rounded-lg border-2 text-sm font-semibold transition ${tamSelecionado?.id === v.id ? "border-black bg-black text-white" : "border-gray-200 hover:border-gray-400"}`}>
+              {(corSelecionada?.variantes ?? []).slice().sort((a,b) => a.gradeItem.ordem - b.gradeItem.ordem).map(v => (
+                <button key={v.id} onClick={() => { setTamSelecionado(v); setQuantidade(1); }} aria-label={"Tamanho " + v.gradeItem.valor} aria-pressed={tamSelecionado?.id === v.id} disabled={!variantesDisponiveis.some(a => a.id === v.id)}
+                  className={`min-w-[48px] h-12 px-3 rounded-lg border-2 text-sm font-semibold transition disabled:line-through disabled:opacity-30 disabled:cursor-not-allowed ${tamSelecionado?.id === v.id ? "border-black bg-black text-white" : "border-gray-200 hover:border-gray-400"}`}>
                   {v.gradeItem.valor}
                 </button>
               ))}
@@ -309,19 +309,21 @@ function VarejoDetalheInner({ produto, similares }: Omit<Props, "vendedorSlug" |
           </div>
 
           {/* Botão comprar */}
-          <button onClick={handleAdicionar} disabled={!tamSelecionado}
+          <button onClick={handleAdicionar} disabled={!tamSelecionado || disponivel === 0}
             className={`w-full flex items-center justify-center gap-2 py-4 rounded-xl font-bold text-base transition ${
               adicionado ? "bg-green-600 text-white" : tamSelecionado ? "bg-black text-white hover:bg-gray-800" : "bg-gray-200 text-gray-400 cursor-not-allowed"
             }`}>
             <ShoppingCart size={18} />
-            {adicionado ? "Adicionado ao carrinho!" : tamSelecionado ? "Adicionar ao carrinho" : "Selecione um tamanho"}
+            {adicionado ? "Adicionado ao carrinho!" : tamSelecionado ? (disponivel > 0 ? "Adicionar ao carrinho" : "Quantidade disponível já no carrinho") : "Selecione seu tamanho"}
           </button>
+          {adicionado && <Link href="/checkout?catalogo=VAREJO" className="block text-center underline text-sm">Ir para o checkout</Link>}
+          <p className="text-xs text-gray-500 text-center">Escolha a entrega ou retirada no próximo passo.</p>
         </div>
       </div>
 
       {/* ── Descrição completa ──────────────────────────── */}
       {descLines.length > 0 && (
-        <div className="max-w-5xl mx-auto px-4 mt-2">
+        <div className="max-w-7xl mx-auto px-4 mt-2">
           <div className="bg-gray-50 rounded-xl p-6">
             <h2 className="font-semibold text-gray-700 mb-3">Descrição do produto</h2>
             <div className="space-y-1.5">
@@ -334,7 +336,7 @@ function VarejoDetalheInner({ produto, similares }: Omit<Props, "vendedorSlug" |
       )}
 
       {/* ── Produtos similares ──────────────────────────── */}
-      <div className="max-w-5xl mx-auto px-4">
+      <div className="max-w-7xl mx-auto px-4">
         <ProdutosSimilares produtos={similares} pathCatalogo="varejo" />
       </div>
 

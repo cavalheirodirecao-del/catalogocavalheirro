@@ -1,7 +1,8 @@
+import { withApiAccess } from "@/lib/api-access";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
-export async function GET(req: NextRequest) {
+async function GETHandler(req: NextRequest) {
   const admin = req.nextUrl.searchParams.get("admin") === "1";
 
   const grupos = await prisma.grupo.findMany({
@@ -18,7 +19,7 @@ export async function GET(req: NextRequest) {
   return NextResponse.json(grupos);
 }
 
-export async function POST(request: NextRequest) {
+async function POSTHandler(request: NextRequest) {
   const { nome } = await request.json();
   if (!nome?.trim()) return NextResponse.json({ erro: "Nome obrigatório." }, { status: 400 });
 
@@ -30,3 +31,6 @@ export async function POST(request: NextRequest) {
   });
   return NextResponse.json(grupo);
 }
+
+export const GET = withApiAccess(GETHandler);
+export const POST = withApiAccess(POSTHandler);

@@ -1,13 +1,14 @@
+import { currentActor, withApiAccess } from "@/lib/api-access";
 import { NextRequest, NextResponse } from "next/server";
 import { getToken } from "next-auth/jwt";
 import { prisma } from "@/lib/prisma";
 
-export async function GET(request: NextRequest) {
+async function GETHandler(request: NextRequest) {
   const config = await prisma.configuracaoGeral.findFirst();
   if (!config) return NextResponse.json(null);
 
-  const token = await getToken({ req: request, secret: process.env.NEXTAUTH_SECRET });
-  const isAdmin = (token as any)?.perfil === "ADMIN";
+  const actor = await currentActor(request);
+  const isAdmin = actor?.perfil === "ADMIN";
 
   return NextResponse.json({
     taxaExcursao: Number(config.taxaExcursao),
@@ -27,7 +28,7 @@ export async function GET(request: NextRequest) {
   });
 }
 
-export async function POST(request: NextRequest) {
+async function POSTHandler(request: NextRequest) {
   const token = await getToken({ req: request, secret: process.env.NEXTAUTH_SECRET });
   if (!token || (token as any).perfil !== "ADMIN") {
     return NextResponse.json({ erro: "Não autorizado" }, { status: 401 });
@@ -73,3 +74,6 @@ export async function POST(request: NextRequest) {
   const novo = await prisma.configuracaoGeral.create({ data });
   return NextResponse.json(novo);
 }
+
+export const GET = withApiAccess(GETHandler);
+export const POST = withApiAccess(POSTHandler);

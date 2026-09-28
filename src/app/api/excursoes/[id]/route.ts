@@ -1,8 +1,9 @@
+import { withApiAccess } from "@/lib/api-access";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { formatarMoeda } from "@/lib/utils";
 
-export async function GET(_: NextRequest, { params }: { params: { id: string } }) {
+async function GETHandler(_: NextRequest, { params }: { params: { id: string } }) {
   const excursao = await prisma.excursao.findUnique({
     where: { id: params.id },
     include: {
@@ -30,7 +31,7 @@ export async function GET(_: NextRequest, { params }: { params: { id: string } }
   });
 }
 
-export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
+async function PATCHHandler(req: NextRequest, { params }: { params: { id: string } }) {
   const body = await req.json();
   const {
     nome, telefone, estado, cidadesAtendidas,
@@ -58,3 +59,6 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
 
   return NextResponse.json(excursao);
 }
+
+export const GET = withApiAccess(GETHandler);
+export const PATCH = withApiAccess(PATCHHandler);

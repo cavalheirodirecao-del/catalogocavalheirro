@@ -1,10 +1,11 @@
+import { withApiAccess } from "@/lib/api-access";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 
 // GET /api/blog/[id] — pode ser CUID ou slug
-export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
+async function GETHandler(req: NextRequest, { params }: { params: { id: string } }) {
   const { id } = params;
 
   const post = await prisma.postBlog.findFirst({
@@ -21,7 +22,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
   return NextResponse.json(post);
 }
 
-export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
+async function PUTHandler(req: NextRequest, { params }: { params: { id: string } }) {
   const session = await getServerSession(authOptions);
   if (!session?.user) return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
 
@@ -55,7 +56,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
   return NextResponse.json(post);
 }
 
-export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
+async function DELETEHandler(req: NextRequest, { params }: { params: { id: string } }) {
   const session = await getServerSession(authOptions);
   if (!session?.user) return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
 
@@ -65,3 +66,7 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
 
   return NextResponse.json({ ok: true });
 }
+
+export const GET = withApiAccess(GETHandler);
+export const PUT = withApiAccess(PUTHandler);
+export const DELETE = withApiAccess(DELETEHandler);

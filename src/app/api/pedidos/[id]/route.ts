@@ -1,11 +1,13 @@
+import { withApiAccess } from "@/lib/api-access";
 import { NextRequest, NextResponse } from "next/server";
 import { getToken } from "next-auth/jwt";
+import { currentActor } from "@/lib/api-access";
 import { prisma } from "@/lib/prisma";
 import { dispararWebhook } from "@/lib/webhook";
 
 const PERFIS_OPERADORES = ["ADMIN", "GERENTE", "ESTOQUISTA"];
 
-export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
+async function GETHandler(req: NextRequest, { params }: { params: { id: string } }) {
   const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
   if (!token) return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
 
@@ -13,7 +15,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     where: { id: params.id },
     include: {
       cliente: true,
-      vendedor: { include: { usuario: true } },
+      vendedor: { include: { usuario: { select: { id: true, nome: true, email: true, ativo: true, perfil: true } } } },
       lojaRetirada: true,
       cupom: true,
       excursao: true,
@@ -31,10 +33,12 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     },
   });
   if (!pedido) return NextResponse.json({ error: "Não encontrado" }, { status: 404 });
+  const actor = await currentActor(req);
+  if (actor?.perfil === "VENDEDOR" && pedido.vendedorId !== actor.vendedor?.id) return NextResponse.json({ erro: "Sem permissão." }, { status: 403 });
   return NextResponse.json(pedido);
 }
 
-export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
+async function PUTHandler(req: NextRequest, { params }: { params: { id: string } }) {
   const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
   if (!token || !PERFIS_OPERADORES.includes((token as any).perfil)) {
     return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
@@ -136,7 +140,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
   }
 }
 
-export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
+async function DELETEHandler(req: NextRequest, { params }: { params: { id: string } }) {
   const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
   if (!token || (token as any).perfil !== "ADMIN") {
     return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
@@ -148,3 +152,7 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
   });
   return NextResponse.json({ ok: true });
 }
+
+export const GET = withApiAccess(GETHandler);
+export const PUT = withApiAccess(PUTHandler);
+export const DELETE = withApiAccess(DELETEHandler);

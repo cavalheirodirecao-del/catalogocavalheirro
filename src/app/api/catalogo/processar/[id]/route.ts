@@ -1,10 +1,10 @@
+import { withApiAccess } from "@/lib/api-access";
 export const runtime = "nodejs";
 export const maxDuration = 60;
 
 import { NextRequest, NextResponse } from "next/server";
 import { renderToBuffer } from "@react-pdf/renderer";
-import { writeFile, mkdir } from "fs/promises";
-import path from "path";
+import { createClient } from "@supabase/supabase-js";
 import React from "react";
 import { prisma } from "@/lib/prisma";
 import { CatalogoPDF } from "@/components/pdf/CatalogoPDF";
@@ -16,7 +16,7 @@ function toAbsolute(url: string | null, baseUrl: string): string | null {
   return `${baseUrl}${url}`;
 }
 
-export async function POST(_req: NextRequest, { params }: { params: { id: string } }) {
+async function POSTHandler(_req: NextRequest, { params }: { params: { id: string } }) {
   const baseUrl = `${_req.nextUrl.protocol}//${_req.nextUrl.host}`;
   const job = await prisma.catalogoJob.findUnique({ where: { id: params.id } });
   if (!job) return NextResponse.json({ erro: "Job não encontrado." }, { status: 404 });
@@ -102,13 +102,11 @@ export async function POST(_req: NextRequest, { params }: { params: { id: string
       }) as any
     );
 
-    // Salva o PDF em /public/uploads/catalogos/
-    const dir = path.join(process.cwd(), "public", "uploads", "catalogos");
-    await mkdir(dir, { recursive: true });
-    const filename = `${job.id}.pdf`;
-    await writeFile(path.join(dir, filename), pdfBuffer);
-
-    const pdfUrl = `/uploads/catalogos/${filename}`;
+    const storage = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
+    const filename = "catalogos/" + job.id + ".pdf";
+    const { error: uploadError } = await storage.storage.from("uploads").upload(filename, pdfBuffer, { contentType: "application/pdf", upsert: true });
+    if (uploadError) throw new Error("Não foi possível salvar o catálogo.");
+    const pdfUrl = storage.storage.from("uploads").getPublicUrl(filename).data.publicUrl;
     await prisma.catalogoJob.update({
       where: { id: job.id },
       data: { status: "CONCLUIDO", pdfUrl, concluidoEm: new Date() },
@@ -125,3 +123,5 @@ export async function POST(_req: NextRequest, { params }: { params: { id: string
     return NextResponse.json({ erro: msg }, { status: 500 });
   }
 }
+
+export const POST = withApiAccess(POSTHandler);

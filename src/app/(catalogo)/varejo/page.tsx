@@ -2,8 +2,6 @@ import { prisma } from "@/lib/prisma";
 import CatalogoClient from "@/components/catalogo/CatalogoClient";
 
 export const revalidate = 300;
-import { headers } from "next/headers";
-import { logVisita } from "@/lib/visitas";
 
 interface Props {
   searchParams: { vendedor?: string; ref?: string };
@@ -11,12 +9,11 @@ interface Props {
 
 export default async function VarejoPage({ searchParams }: Props) {
   const vendedorSlug  = searchParams.vendedor ?? null;
-  const afiliadoSlug  = searchParams.ref ?? null;
 
   let vendedorNome: string | null = null;
   if (vendedorSlug) {
     const vendedor = await prisma.vendedor.findUnique({
-      where: { slug: vendedorSlug },
+      where: { slug: vendedorSlug, ativo: true, usuario: { ativo: true } },
       include: { usuario: true },
     });
     vendedorNome = vendedor?.usuario.nome ?? null;
@@ -53,8 +50,6 @@ export default async function VarejoPage({ searchParams }: Props) {
     }),
   ]);
 
-  const ip = headers().get("x-forwarded-for")?.split(",")[0].trim() ?? null;
-  logVisita("VAREJO", ip, vendedorSlug, afiliadoSlug).catch(() => {});
 
   return (
     <CatalogoClient

@@ -17,7 +17,7 @@ export const authOptions: NextAuthOptions = {
       },
       async authorize(credentials) {
         // Aceita tanto "senha" (login admin) quanto "password" (login afiliado)
-        const senhaInput = (credentials as any).password ?? credentials.senha;
+        const senhaInput = (credentials as any)?.password ?? credentials?.senha;
         if (!credentials?.email || !senhaInput) return null;
 
         const usuario = await prisma.usuario.findUnique({

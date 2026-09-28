@@ -1,23 +1,24 @@
+import { withApiAccess } from "@/lib/api-access";
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
-export async function GET(_: Request, { params }: { params: { id: string } }) {
+async function GETHandler(_: Request, { params }: { params: { id: string } }) {
   const vendedor = await prisma.vendedor.findUnique({
     where: { id: params.id },
-    include: { usuario: true, links: true, loja: true },
+    include: { usuario: { select: { id: true, nome: true, email: true, ativo: true, perfil: true } }, links: true, loja: true },
   });
   if (!vendedor) return NextResponse.json({ error: "Não encontrado" }, { status: 404 });
   return NextResponse.json(vendedor);
 }
 
-export async function PUT(req: Request, { params }: { params: { id: string } }) {
+async function PUTHandler(req: Request, { params }: { params: { id: string } }) {
   try {
     const body = await req.json();
     const { nome, email, telefone, slug, lojaId, ativo, catalogos } = body;
 
     const vendedor = await prisma.vendedor.findUnique({
       where: { id: params.id },
-      include: { usuario: true },
+      include: { usuario: { select: { id: true, nome: true, email: true, ativo: true, perfil: true } } },
     });
     if (!vendedor) return NextResponse.json({ error: "Não encontrado" }, { status: 404 });
 
@@ -32,15 +33,12 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
         data: { slug, telefone: telefone || null, lojaId: lojaId || null, ativo },
       });
 
-      // Recria links de catálogo
-      await tx.linkVendedor.deleteMany({ where: { vendedorId: params.id } });
-      if (catalogos?.length) {
-        await tx.linkVendedor.createMany({
-          data: catalogos.map((c: string) => ({
-            vendedorId: params.id,
-            catalogo: c,
-            ativo: true,
-          })),
+      // Preserve IDs referenced by historical orders.
+      await tx.linkVendedor.updateMany({ where: { vendedorId: params.id }, data: { ativo: false } });
+      for (const catalogo of catalogos ?? []) {
+        await tx.linkVendedor.upsert({
+          where: { vendedorId_catalogo: { vendedorId: params.id, catalogo } },
+          update: { ativo: true }, create: { vendedorId: params.id, catalogo, ativo: true },
         });
       }
     });
@@ -52,7 +50,7 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
   }
 }
 
-export async function DELETE(_: Request, { params }: { params: { id: string } }) {
+async function DELETEHandler(_: Request, { params }: { params: { id: string } }) {
   const vendedor = await prisma.vendedor.findUnique({ where: { id: params.id } });
   if (!vendedor) return NextResponse.json({ error: "Não encontrado" }, { status: 404 });
 
@@ -63,3 +61,7 @@ export async function DELETE(_: Request, { params }: { params: { id: string } })
 
   return NextResponse.json({ ok: true });
 }
+
+export const GET = withApiAccess(GETHandler);
+export const PUT = withApiAccess(PUTHandler);
+export const DELETE = withApiAccess(DELETEHandler);

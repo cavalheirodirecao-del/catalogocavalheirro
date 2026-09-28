@@ -1,3 +1,4 @@
+import { withApiAccess } from "@/lib/api-access";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
@@ -34,7 +35,7 @@ function getIntervalo(periodo: string): { inicio: Date; labels: string[] } {
   return { inicio, labels };
 }
 
-export async function GET(req: NextRequest) {
+async function GETHandler(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const periodo = searchParams.get("periodo") ?? "mensal";
   const { inicio, labels } = getIntervalo(periodo);
@@ -140,3 +141,5 @@ export async function GET(req: NextRequest) {
     serie,
   });
 }
+
+export const GET = withApiAccess(GETHandler);

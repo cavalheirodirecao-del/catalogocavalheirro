@@ -1,7 +1,8 @@
+import { withApiAccess } from "@/lib/api-access";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
-export async function GET(req: NextRequest) {
+async function GETHandler(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const busca  = searchParams.get("busca") ?? "";
   const estado = searchParams.get("estado") ?? "";
@@ -22,7 +23,7 @@ export async function GET(req: NextRequest) {
   return NextResponse.json(excursoes);
 }
 
-export async function POST(req: NextRequest) {
+async function POSTHandler(req: NextRequest) {
   const body = await req.json();
   const {
     nome, telefone, estado, cidadesAtendidas,
@@ -52,3 +53,6 @@ export async function POST(req: NextRequest) {
 
   return NextResponse.json(excursao, { status: 201 });
 }
+
+export const GET = withApiAccess(GETHandler);
+export const POST = withApiAccess(POSTHandler);

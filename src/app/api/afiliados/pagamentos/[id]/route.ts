@@ -1,9 +1,10 @@
+import { withApiAccess } from "@/lib/api-access";
 import { NextRequest, NextResponse } from "next/server";
 import { getToken } from "next-auth/jwt";
 import { prisma } from "@/lib/prisma";
 
 // PATCH /api/afiliados/pagamentos/[id] — marcar como pago / atualizar obs
-export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
+async function PATCHHandler(req: NextRequest, { params }: { params: { id: string } }) {
   const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
   if (!token || (token as any).perfil !== "ADMIN") {
     return NextResponse.json({ erro: "Não autorizado" }, { status: 401 });
@@ -22,3 +23,5 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
 
   return NextResponse.json(pagamento);
 }
+
+export const PATCH = withApiAccess(PATCHHandler);

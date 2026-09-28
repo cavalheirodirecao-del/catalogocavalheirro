@@ -174,7 +174,7 @@ export default function ProdutoCard({ produto, catalogo, pathCatalogo, precoVisi
               </button>
             )}
           </div>
-          <p className={t.footerClass}>{produto.cores.length} {produto.cores.length === 1 ? "cor" : "cores"} · Ver grade →</p>
+          <p className={t.footerClass}>{produto.cores.length} {produto.cores.length === 1 ? "cor" : "cores"} · {catalogo === "VAREJO" ? "Escolher tamanho →" : "Montar grade →"}</p>
         </div>
       </Link>
     );

@@ -1,16 +1,17 @@
+import { withApiAccess } from "@/lib/api-access";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
-export async function GET() {
+async function GETHandler() {
   const lojas = await prisma.loja.findMany({
     where: { ativo: true },
-    include: { vendedores: { include: { usuario: true } } },
+    include: { vendedores: { include: { usuario: { select: { id: true, nome: true, email: true, ativo: true, perfil: true } } } } },
     orderBy: { nome: "asc" },
   });
   return NextResponse.json(lojas);
 }
 
-export async function POST(request: NextRequest) {
+async function POSTHandler(request: NextRequest) {
   const { nome, endereco, cidade, horarioFuncionamento, vendedoresIds } = await request.json();
 
   const loja = await prisma.loja.create({
@@ -26,3 +27,6 @@ export async function POST(request: NextRequest) {
 
   return NextResponse.json(loja);
 }
+
+export const GET = withApiAccess(GETHandler);
+export const POST = withApiAccess(POSTHandler);

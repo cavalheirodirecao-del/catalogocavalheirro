@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from "react";
 import { ShoppingCart, X, Minus, Plus, ChevronLeft, ChevronRight, Play, Ruler, ZoomIn, Lock } from "lucide-react";
+import QuantityMatrix from "./QuantityMatrix";
 import RegistroWall from "./RegistroWall";
 import { CartProvider, useCart } from "./CartProvider";
 import ProdutosSimilares from "./ProdutosSimilares";
@@ -52,7 +53,7 @@ function CarrinhoDrawer({ catalogo, precoVista, qtdMinima }: {
 }) {
   const { itens, remover, alterarQtd, totalItens } = useCart();
   const [aberto, setAberto] = useState(false);
-  const total = itens.reduce((acc, i) => acc + precoVista * i.quantidade, 0);
+  const total = itens.reduce((acc, i) => acc + i.precoUnitario * i.quantidade, 0);
   const totalQtd = itens.reduce((acc, i) => acc + i.quantidade, 0);
   const atingiuMinimo = totalQtd >= qtdMinima;
 
@@ -80,7 +81,7 @@ function CarrinhoDrawer({ catalogo, precoVista, qtdMinima }: {
                   <div className="flex-1">
                     <p className="text-sm font-medium leading-tight">{item.produtoNome}</p>
                     <p className="text-xs text-gray-400">{item.tamanho} · {item.corNome}</p>
-                    <p className="text-sm font-bold mt-1">{formatarMoeda(precoVista * item.quantidade)}</p>
+                    <p className="text-sm font-bold mt-1">{formatarMoeda(item.precoUnitario * item.quantidade)}</p>
                     <div className="flex items-center gap-2 mt-1">
                       <button onClick={() => alterarQtd(item.varianteId, item.quantidade - 1)} className="w-6 h-6 rounded border border-gray-200 flex items-center justify-center hover:bg-gray-100"><Minus size={10} /></button>
                       <span className="text-sm font-medium w-6 text-center">{item.quantidade}</span>
@@ -111,7 +112,7 @@ function CarrinhoDrawer({ catalogo, precoVista, qtdMinima }: {
 // ─── Conteúdo ────────────────────────────────────────────
 function DetalheInner({ produto, catalogo, pathCatalogo, qtdMinima, similares }: Omit<ProdutoDetalheProps, "vendedorSlug">) {
   const router = useRouter();
-  const { adicionar } = useCart();
+  const { adicionar, itens, totalItens } = useCart();
   const youtubeId = produto.videoUrl ? getYouTubeId(produto.videoUrl) : null;
 
   const isB2B = catalogo !== "VAREJO";
@@ -155,12 +156,14 @@ function DetalheInner({ produto, catalogo, pathCatalogo, qtdMinima, similares }:
   }
 
   function setQtd(corId: string, gradeItemId: string, val: number) {
-    setGrade(g => ({ ...g, [corId]: { ...g[corId], [gradeItemId]: Math.max(0, val) } }));
+    setGrade(g => ({ ...g, [corId]: { ...g[corId], [gradeItemId]: Math.max(0, Math.min(getEstoque(produto.cores.find(c => c.id === corId)!, gradeItemId), Math.floor(Number.isFinite(val) ? val : 0))) } }));
   }
 
   function getEstoque(cor: Cor, gradeItemId: string): number {
     const e = cor.variantes.find(v => v.gradeItem.id === gradeItemId)?.estoque;
-    return Math.max(0, (e?.quantidade ?? 0) - (e?.pendente ?? 0));
+    const varianteId = cor.variantes.find(v => v.gradeItem.id === gradeItemId)?.id;
+    const noCarrinho = itens.find(i => i.varianteId === varianteId)?.quantidade ?? 0;
+    return Math.max(0, (e?.quantidade ?? 0) - (e?.pendente ?? 0) - noCarrinho);
   }
 
   function getVarianteId(cor: Cor, gradeItemId: string): string | null {
@@ -175,7 +178,7 @@ function DetalheInner({ produto, catalogo, pathCatalogo, qtdMinima, similares }:
     let adicionou = false;
     for (const cor of produto.cores) {
       for (const t of tamanhos) {
-        const qty = grade[cor.id]?.[t.id] ?? 0;
+        const qty = Math.min(grade[cor.id]?.[t.id] ?? 0, getEstoque(cor, t.id));
         if (qty <= 0) continue;
         const varianteId = getVarianteId(cor, t.id);
         if (!varianteId) continue;
@@ -293,54 +296,9 @@ function DetalheInner({ produto, catalogo, pathCatalogo, qtdMinima, similares }:
           {/* Grade */}
           {tamanhos.length > 0 ? (
             <div>
-              <h2 className="font-semibold text-gray-700 mb-3">Selecione as quantidades</h2>
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr>
-                      <th className="text-left pb-2 pr-3 text-gray-400 font-normal text-xs w-28">Cor</th>
-                      {tamanhos.map(t => (
-                        <th key={t.id} className="text-center pb-2 px-1 font-semibold text-gray-600 text-xs min-w-[52px]">{t.valor}</th>
-                      ))}
-                      <th className="text-right pb-2 pl-2 text-gray-400 font-normal text-xs">Qtd</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-100">
-                    {produto.cores.map((cor) => {
-                      const qtdCor = tamanhos.reduce((a, t) => a + (grade[cor.id]?.[t.id] ?? 0), 0);
-                      return (
-                        <tr key={cor.id} className={`cursor-pointer transition ${corGaleria.id === cor.id ? "bg-gray-50" : "hover:bg-gray-50/50"}`} onClick={() => selecionarCor(cor)}>
-                          <td className="py-2 pr-3">
-                            <div className="flex items-center gap-2">
-                              <span className={`w-5 h-5 rounded-full border-2 shrink-0 ${corGaleria.id === cor.id ? "border-black" : "border-gray-200"}`}
-                                style={{ backgroundColor: cor.hexCor ?? "#ccc" }} />
-                              <span className="text-xs font-medium truncate max-w-[70px]">{cor.nome}</span>
-                            </div>
-                          </td>
-                          {tamanhos.map(t => {
-                            const estoque = getEstoque(cor, t.id);
-                            const val = grade[cor.id]?.[t.id] ?? 0;
-                            return (
-                              <td key={t.id} className="py-2 px-1 text-center" onClick={e => e.stopPropagation()}>
-                                <input type="number" min={0} max={estoque} value={val === 0 ? "" : val} placeholder="0"
-                                  disabled={estoque === 0}
-                                  onChange={e => setQtd(cor.id, t.id, parseInt(e.target.value) || 0)}
-                                  className={`w-12 text-center border rounded-lg py-1.5 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-black transition ${
-                                    estoque === 0 ? "bg-gray-100 border-gray-100 text-gray-300 cursor-not-allowed"
-                                      : val > 0 ? "border-black bg-black text-white"
-                                      : "border-gray-200 hover:border-gray-400"}`} />
-                              </td>
-                            );
-                          })}
-                          <td className="py-2 pl-2 text-right">
-                            <span className={`text-xs font-bold ${qtdCor > 0 ? "text-black" : "text-gray-300"}`}>{qtdCor > 0 ? qtdCor : "—"}</span>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
+              <QuantityMatrix colors={produto.cores} sizes={tamanhos} values={grade}
+                available={(color, size) => getEstoque(produto.cores.find(c => c.id === color.id)!, size)}
+                onChange={setQtd} onColor={color => selecionarCor(produto.cores.find(c => c.id === color.id)!)} />
 
               <div className="mt-4 flex items-center justify-between p-4 bg-white rounded-xl border border-gray-100 shadow-sm">
                 {precoVisivel ? (
@@ -361,9 +319,9 @@ function DetalheInner({ produto, catalogo, pathCatalogo, qtdMinima, similares }:
                   </button>
                 )}
               </div>
-              {totalPecas > 0 && totalPecas < qtdMinima && (
+              {totalPecas > 0 && totalPecas + totalItens < qtdMinima && (
                 <p className="text-xs text-yellow-600 bg-yellow-50 rounded-lg px-3 py-2 mt-2">
-                  Mínimo de {qtdMinima} peças — faltam {qtdMinima - totalPecas}
+                  Mínimo de {qtdMinima} peças — faltam {qtdMinima - totalPecas - totalItens} no pedido completo
                 </p>
               )}
             </div>

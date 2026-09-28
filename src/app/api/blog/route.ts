@@ -1,8 +1,9 @@
+import { withApiAccess } from "@/lib/api-access";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getToken } from "next-auth/jwt";
 
-export async function GET(req: NextRequest) {
+async function GETHandler(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const admin = searchParams.get("admin") === "1";
 
@@ -32,7 +33,7 @@ export async function GET(req: NextRequest) {
   return NextResponse.json(posts);
 }
 
-export async function POST(req: NextRequest) {
+async function POSTHandler(req: NextRequest) {
   const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
   if (!token) return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
 
@@ -60,3 +61,6 @@ export async function POST(req: NextRequest) {
 
   return NextResponse.json(post);
 }
+
+export const GET = withApiAccess(GETHandler);
+export const POST = withApiAccess(POSTHandler);

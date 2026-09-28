@@ -1,7 +1,8 @@
+import { withApiAccess } from "@/lib/api-access";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
-export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
+async function PATCHHandler(req: NextRequest, { params }: { params: { id: string } }) {
   const { nome, ativo } = await req.json();
 
   const data: { nome?: string; ativo?: boolean } = {};
@@ -12,7 +13,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   return NextResponse.json(subGrupo);
 }
 
-export async function DELETE(_req: NextRequest, { params }: { params: { id: string } }) {
+async function DELETEHandler(_req: NextRequest, { params }: { params: { id: string } }) {
   const count = await prisma.produto.count({ where: { subGrupoId: params.id } });
   if (count > 0) {
     return NextResponse.json(
@@ -24,3 +25,6 @@ export async function DELETE(_req: NextRequest, { params }: { params: { id: stri
   await prisma.subGrupo.delete({ where: { id: params.id } });
   return NextResponse.json({ ok: true });
 }
+
+export const PATCH = withApiAccess(PATCHHandler);
+export const DELETE = withApiAccess(DELETEHandler);

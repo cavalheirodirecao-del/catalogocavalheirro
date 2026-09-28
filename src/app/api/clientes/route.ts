@@ -1,7 +1,8 @@
+import { withApiAccess } from "@/lib/api-access";
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
-export async function GET() {
+async function GETHandler() {
   const clientes = await prisma.cliente.findMany({
     orderBy: { nome: "asc" },
     include: { _count: { select: { pedidos: true } } },
@@ -9,7 +10,7 @@ export async function GET() {
   return NextResponse.json(clientes);
 }
 
-export async function POST(req: Request) {
+async function POSTHandler(req: Request) {
   try {
     const body = await req.json();
     const { nome, documento, email, telefone, endereco, cidade, estado, tipo } = body;
@@ -40,3 +41,6 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }
+
+export const GET = withApiAccess(GETHandler);
+export const POST = withApiAccess(POSTHandler);
