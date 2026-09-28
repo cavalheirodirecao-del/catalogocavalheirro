@@ -12,6 +12,15 @@ function load(file, dependencies = {}) {
 }
 const seo = load("src/lib/seo.ts");
 
+test("article headings retain a single page H1 and image descriptions are attribute-safe", () => {
+  const { blogSemantics } = load("src/lib/blog-semantics.ts");
+  const result = blogSemantics('<h1>Title</h1><h5>Section</h5><img src="/photo.jpg"><img alt="Descrição editorial" src="/two.jpg">', 'Jeans "azul" <teste>');
+  assert(result.includes("<h2>Title</h2><h3>Section</h3>"));
+  assert(!result.includes("<h1"));
+  assert(result.includes("&quot;azul&quot; &lt;teste&gt;"));
+  assert(result.includes('alt="Descrição editorial"'));
+});
+
 test("sitemap publishes active products and published articles without private or referral URLs", async () => {
   const prisma = {
     produto: { findMany: async ({ where }) => { assert.equal(where.ativo, true); return [{ id: "item", atualizadoEm: new Date() }]; } },

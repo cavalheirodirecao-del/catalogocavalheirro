@@ -5,7 +5,7 @@ import { prisma } from "@/lib/prisma";
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "Trabalhe Conosco | Cavalheiro",
+  title: "Trabalhe Conosco",
   description: "Faça parte da equipe Cavalheiro. Oportunidades de emprego em moda, varejo e produção no Polo do Agreste Pernambucano.",
   openGraph: {
     title: "Trabalhe Conosco | Cavalheiro",

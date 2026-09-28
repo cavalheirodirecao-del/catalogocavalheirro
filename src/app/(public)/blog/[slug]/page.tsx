@@ -1,4 +1,5 @@
 import { SITE_URL, jsonLd as serializeJsonLd } from "@/lib/seo";
+import { blogSemantics } from "@/lib/blog-semantics";
 import { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Link from "next/link";
@@ -164,7 +165,7 @@ export default async function BlogPostPage({ params }: Props) {
               prose-img:rounded-sm prose-img:max-w-full
               prose-ul:text-white/70 prose-ol:text-white/70
               prose-li:font-dm-sans prose-li:leading-relaxed"
-            dangerouslySetInnerHTML={{ __html: limparCoresInline(post.conteudo) }}
+            dangerouslySetInnerHTML={{ __html: limparCoresInline(blogSemantics(post.conteudo, post.titulo)) }}
           />
 
           {/* Tags */}
