@@ -16,7 +16,7 @@ export const publicPages: Record<string, [string, string]> = {
 
 export function pageMetadata(path: string, title: string, description: string): Metadata {
   return {
-    title, description,
+    title: { absolute: `${title} | Cavalheiro` }, description,
     alternates: { canonical: `${SITE_URL}/${path}` },
     openGraph: { title, description, url: `${SITE_URL}/${path}`, siteName: "Cavalheiro", locale: "pt_BR", type: "website" },
     twitter: { card: "summary", title, description },

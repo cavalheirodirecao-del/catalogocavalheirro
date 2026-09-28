@@ -60,7 +60,7 @@ export default async function VarejoProdutoPage({ params, searchParams }: Props)
     <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLd({
       "@context": "https://schema.org", "@type": "Product", name: produto.nome, sku: produto.codigo,
       description: produto.descricao ?? undefined,
-      image: produto.imagemPrincipal || produto.cores.flatMap(c => c.imagens.map(i => i.url)),
+      image: (produto.imagemPrincipal ? [produto.imagemPrincipal] : produto.cores.flatMap(c => c.imagens.map(i => i.url))).map(src => new URL(src, SITE_URL).href),
       brand: { "@type": "Brand", name: "Cavalheiro" },
       offers: Number(produto.precoVarejoVista) > 0 ? { "@type": "Offer", url: `${SITE_URL}/varejo/produto/${produto.id}`, priceCurrency: "BRL", price: Number(produto.precoVarejoVista),
         availability: produto.cores.some(c => c.variantes.some(v => v.estoque && v.estoque.quantidade > v.estoque.pendente)) ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
