@@ -43,7 +43,7 @@ function getYouTubeId(url: string): string | null {
 
 // ─── Carrinho ────────────────────────────────────────────
 function CarrinhoDrawer({ precos }: { precos: Record<string, number> }) {
-  const { itens, remover, alterarQtd, totalItens, totalValor } = useCart();
+  const { itens, remover, alterarQtd, limiteEstoque, totalItens, totalValor } = useCart();
   const [aberto, setAberto] = useState(false);
   const total = totalValor(precos);
 
@@ -75,7 +75,7 @@ function CarrinhoDrawer({ precos }: { precos: Record<string, number> }) {
                     <div className="flex items-center gap-2 mt-1">
                       <button onClick={() => alterarQtd(item.varianteId, item.quantidade - 1)} className="w-6 h-6 rounded border border-gray-200 flex items-center justify-center hover:bg-gray-100"><Minus size={10} /></button>
                       <span className="text-sm font-medium w-6 text-center">{item.quantidade}</span>
-                      <button onClick={() => alterarQtd(item.varianteId, item.quantidade + 1)} className="w-6 h-6 rounded border border-gray-200 flex items-center justify-center hover:bg-gray-100"><Plus size={10} /></button>
+                      <button disabled={item.quantidade >= limiteEstoque(item.varianteId)} title="Limite do estoque disponível" onClick={() => alterarQtd(item.varianteId, item.quantidade + 1)} className="w-6 h-6 rounded border border-gray-200 flex items-center justify-center hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed"><Plus size={10} /></button>
                       <button onClick={() => remover(item.varianteId)} className="ml-auto text-red-400 hover:text-red-600"><X size={14} /></button>
                     </div>
                   </div>

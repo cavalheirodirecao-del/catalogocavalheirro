@@ -169,3 +169,18 @@ test("every non-auth API has handler-level authorization",()=>{
  }
 });
 
+
+
+test("cart quantities cannot exceed available stock, including old carts and duplicate lines", () => {
+ const { limitarQuantidade, ajustarCarrinho } = load("src/lib/cart-stock.ts");
+ assert.equal(limitarQuantidade(205, 12), 12);
+ assert.equal(limitarQuantidade(13, 12), 12);
+ assert.equal(limitarQuantidade(3.8, 12), 3);
+ assert.equal(limitarQuantidade(NaN, 12), 0);
+ assert.equal(limitarQuantidade(-5, 12), 0);
+ const items = ajustarCarrinho([{varianteId:"p",quantidade:205},{varianteId:"m",quantidade:54},{varianteId:"gone",quantidade:2},{varianteId:"p",quantidade:10}], {p:12,m:4});
+ assert.equal(items.length, 2);
+ assert.equal(items[0].quantidade, 12);
+ assert.equal(items[1].quantidade, 4);
+ assert.equal(ajustarCarrinho(items, {p:0,m:1})[0].quantidade, 1);
+});

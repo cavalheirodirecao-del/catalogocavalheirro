@@ -36,7 +36,7 @@ interface Props {
 }
 
 export default function MiniGrade({ produto, onConcluir }: Props) {
-  const { adicionar } = useCart();
+  const { adicionar, itens, limiteEstoque } = useCart();
 
   const tamanhos = useMemo(() => {
     const map = new Map<string, { id: string; valor: string; ordem: number }>();
@@ -58,12 +58,13 @@ export default function MiniGrade({ produto, onConcluir }: Props) {
   const [adicionado, setAdicionado] = useState(false);
 
   function setQtd(corId: string, gradeItemId: string, val: number) {
-    setGrade(g => ({ ...g, [corId]: { ...g[corId], [gradeItemId]: Math.max(0, val) } }));
+    setGrade(g => ({ ...g, [corId]: { ...g[corId], [gradeItemId]: Math.max(0, Math.min(Number.isFinite(val) ? Math.floor(val) : 0, getEstoque(produto.cores.find(c => c.id === corId)!, gradeItemId))) } }));
   }
 
   function getEstoque(cor: Cor, gradeItemId: string): number {
-    const e = cor.variantes.find(v => v.gradeItem.id === gradeItemId)?.estoque;
-    return Math.max(0, (e?.quantidade ?? 0) - (e?.pendente ?? 0));
+    const variante = cor.variantes.find(v => v.gradeItem.id === gradeItemId);
+    if (!variante) return 0;
+    return Math.max(0, limiteEstoque(variante.id) - (itens.find(i => i.varianteId === variante.id)?.quantidade ?? 0));
   }
 
   function getVarianteId(cor: Cor, gradeItemId: string): string | null {
@@ -86,7 +87,7 @@ export default function MiniGrade({ produto, onConcluir }: Props) {
     if (totalPecas === 0) return;
     for (const cor of produto.cores) {
       for (const t of tamanhos) {
-        const qty = grade[cor.id]?.[t.id] ?? 0;
+        const qty = Math.min(grade[cor.id]?.[t.id] ?? 0, getEstoque(cor, t.id));
         if (qty <= 0) continue;
         const varianteId = getVarianteId(cor, t.id);
         if (!varianteId) continue;

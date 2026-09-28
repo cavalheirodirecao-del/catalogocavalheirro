@@ -1,6 +1,6 @@
 export function isPublicApi(path: string, method: string, query: URLSearchParams) {
   if (method === "GET") {
-    if (["/api/configuracoes", "/api/checkout-dados", "/api/cupons/validar", "/api/keepalive"].includes(path)) return true;
+    if (["/api/catalogo/estoque", "/api/configuracoes", "/api/checkout-dados", "/api/cupons/validar", "/api/keepalive"].includes(path)) return true;
     if (/^\/api\/leads\/[^/]+$/.test(path)) return true;
     return path === "/api/leads" && /^\d{10,15}$/.test((query.get("telefone") ?? "").replace(/\D/g, "")) && ["ATACADO", "FABRICA"].includes(query.get("catalogo") ?? "");
   }
