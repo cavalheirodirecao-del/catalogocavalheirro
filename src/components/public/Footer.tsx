@@ -57,7 +57,6 @@ export default function Footer() {
             {[
               { href: "/varejo", label: "Varejo", color: "#FF4D00" },
               { href: "/atacado", label: "Atacado", color: "#B8965A" },
-              { href: "/fabrica", label: "Fábrica", color: "#F5C400" },
             ].map((c) => (
               <div key={c.href} className="flex items-center gap-2">
                 <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: c.color }} />

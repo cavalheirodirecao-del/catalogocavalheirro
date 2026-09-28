@@ -103,10 +103,18 @@ async function POSTHandler(_req: NextRequest, { params }: { params: { id: string
     );
 
     const storage = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
+    const bucket = job.tabelaPreco === "FABRICA" ? "catalogos-exclusivos" : "uploads";
+    if (bucket === "catalogos-exclusivos") {
+      const existing = await storage.storage.getBucket(bucket);
+      if (!existing.data) {
+        const created = await storage.storage.createBucket(bucket, { public: false });
+        if (created.error && !(await storage.storage.getBucket(bucket)).data) throw new Error("Não foi possível preparar o armazenamento privado.");
+      }
+    }
     const filename = "catalogos/" + job.id + ".pdf";
-    const { error: uploadError } = await storage.storage.from("uploads").upload(filename, pdfBuffer, { contentType: "application/pdf", upsert: true });
+    const { error: uploadError } = await storage.storage.from(bucket).upload(filename, pdfBuffer, { contentType: "application/pdf", upsert: true });
     if (uploadError) throw new Error("Não foi possível salvar o catálogo.");
-    const pdfUrl = storage.storage.from("uploads").getPublicUrl(filename).data.publicUrl;
+    const pdfUrl = job.tabelaPreco === "FABRICA" ? "/api/exclusivo/pdf/" + job.id : storage.storage.from(bucket).getPublicUrl(filename).data.publicUrl;
     await prisma.catalogoJob.update({
       where: { id: job.id },
       data: { status: "CONCLUIDO", pdfUrl, concluidoEm: new Date() },

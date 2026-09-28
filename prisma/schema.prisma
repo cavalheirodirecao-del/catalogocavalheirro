@@ -536,6 +536,7 @@ model Pedido {
   visitanteId String?
   origemRastreamento String?
   chaveCheckout String? @unique
+  acessoExclusivoId String?
   id     String @id @default(cuid())
   numero Int    @unique @default(autoincrement())
 
@@ -677,4 +678,19 @@ model PostBlog {
   criadoEm      DateTime  @default(now())
   publicadoEm   DateTime?
   atualizadoEm  DateTime  @updatedAt
+}
+
+model AcessoExclusivo {
+ id String @id @default(cuid())
+ nome String
+ telefone String
+ ativo Boolean @default(true)
+ tokenHash String? @unique
+ expiraEm DateTime
+ usadoEm DateTime?
+ versao Int @default(1)
+ criadoPor String
+ atualizadoPor String
+ criadoEm DateTime @default(now())
+ atualizadoEm DateTime @updatedAt
 }

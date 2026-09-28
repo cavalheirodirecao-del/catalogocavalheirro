@@ -8,7 +8,7 @@ export default async function RevendedoresPage() {
   // Busca capas, produtos e configuração em paralelo
   const [configuracoes, produtos, configGeral] = await Promise.all([
     prisma.configuracaoCatalogo.findMany({
-      where: { catalogo: { in: ["VAREJO", "ATACADO", "FABRICA"] } },
+      where: { catalogo: { in: ["VAREJO", "ATACADO"] } },
       select: { catalogo: true, imagemCapa: true },
     }),
     prisma.produto.findMany({
@@ -46,15 +46,6 @@ export default async function RevendedoresPage() {
       desc: `Para lojistas e revendedores. Mínimo de ${qtdAtacado} peças sortidas, preços especiais.`,
       cor: "#B8965A",
       corBg: "#F4EFE6",
-      badge: "B2B",
-    },
-    {
-      href: "/fabrica",
-      tipo: "FABRICA" as const,
-      label: "Atacado Grandes Clientes",
-      desc: `Acima de ${qtdFabrica} peças. Preço diferenciado direto da produção.`,
-      cor: "#F5C400",
-      corBg: "#0E1117",
       badge: "B2B",
     },
   ];

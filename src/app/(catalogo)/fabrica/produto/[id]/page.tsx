@@ -1,7 +1,11 @@
+import { exclusiveAccess } from "@/lib/exclusive-access";
+import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
 import ProdutoDetalheGrade from "@/components/catalogo/ProdutoDetalheGrade";
 import { getPreco } from "@/lib/utils";
+export const dynamic = "force-dynamic";
+export const metadata = { robots: { index: false, follow: false } };
 
 interface Props {
   params: { id: string };
@@ -9,6 +13,8 @@ interface Props {
 }
 
 export default async function FabricaProdutoPage({ params, searchParams }: Props) {
+  if (!await exclusiveAccess()) redirect("/acesso-exclusivo");
+
   const vendedorSlug = searchParams.vendedor ?? null;
 
   const [produto, configGeral] = await Promise.all([

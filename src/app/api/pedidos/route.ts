@@ -1,3 +1,4 @@
+import { exclusiveAccess } from "@/lib/exclusive-access";
 import { withApiAccess } from "@/lib/api-access";
 import { NextRequest, NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
@@ -25,6 +26,9 @@ async function POSTHandler(req:NextRequest){
   const parsed=pedidoInput.safeParse(await req.json().catch(()=>null));
   if(!parsed.success)return NextResponse.json({erro:"Confira os dados do pedido e as quantidades."},{status:400});
   const b=parsed.data;
+  const exclusivo = b.catalogo === "FABRICA" ? await exclusiveAccess(req) : null;
+  if (b.catalogo === "FABRICA" && !exclusivo) return NextResponse.json({erro:"Seu acesso exclusivo não está ativo."},{status:403});
+  if (exclusivo) { b.nomeCliente = exclusivo.nome; b.telefoneCliente = exclusivo.telefone; }
   const visitanteId=validTrackingId(req.cookies.get(VISITOR_COOKIE)?.value);
   const existing=await prisma.pedido.findUnique({where:{chaveCheckout:b.chaveCheckout}});
   if(existing){
@@ -61,6 +65,7 @@ async function POSTHandler(req:NextRequest){
           const duplicate=await tx.pedido.findUnique({where:{chaveCheckout:b.chaveCheckout}});
           if(duplicate){if(duplicate.visitanteId!==visitanteId)throw new CheckoutError("Identificador já utilizado.",409);return{pedido:duplicate,created:false};}
           const config=await tx.configuracaoGeral.findFirst();
+          if (exclusivo && !await tx.acessoExclusivo.findFirst({where:{id:exclusivo.id, ativo:true, versao:exclusivo.versao},select:{id:true}})) throw new CheckoutError("Acesso exclusivo revogado.",403);
           const minimum=b.catalogo==="ATACADO"?(config?.qtdMinimaAtacado??15):b.catalogo==="FABRICA"?(config?.qtdMinimaFabrica??40):1;
           if(items.reduce((n,i)=>n+i.quantidade,0)<minimum)throw new CheckoutError("Pedido mínimo de "+minimum+" peças.");
           const variants=await tx.produtoVariante.findMany({where:{id:{in:items.map(i=>i.varianteId)},ativo:true,produto:{ativo:true},cor:{ativo:true}},include:{produto:true,estoque:true}});
@@ -91,7 +96,7 @@ async function POSTHandler(req:NextRequest){
           if(cents(b.total)!==total)throw new CheckoutError("Os valores foram atualizados. Recarregue o carrinho e confira o total antes de confirmar.",409,{totalAtualizado:total/100, itensAtualizados: variants.map(v=>({varianteId:v.id,precoVista:Number((v.produto as any)[priceField(b.catalogo,"VISTA")]),precoPrazo:Number((v.produto as any)[priceField(b.catalogo,"PRAZO")])}))});
           if(coupon)await tx.cupom.update({where:{id:coupon.id},data:{usoAtual:{increment:1}}});
           const pedido=await tx.pedido.create({data:{
-            catalogo:b.catalogo,vendedorId:seller?.id??null,linkVendedorId:seller?.links[0]?.id??null,afiliadoId:referral?.afiliadoId??null,
+            acessoExclusivoId:exclusivo?.id??null,catalogo:b.catalogo,vendedorId:seller?.id??null,linkVendedorId:seller?.links[0]?.id??null,afiliadoId:referral?.afiliadoId??null,
             visitanteId,chaveCheckout:b.chaveCheckout,origemRastreamento:referral?.ref.tipo==="VENDEDOR"?"LINK_VENDEDOR":referral?.ref.tipo==="AFILIADO"?"LINK_AFILIADO":seller?"SELECAO_CHECKOUT":"DIRETO",
             nomeClienteAvulso:b.nomeCliente,telefoneClienteAvulso:b.telefoneCliente,tipoEnvio:b.tipoEnvio,lojaRetiradaId:b.tipoEnvio==="RETIRADA_LOJA"?b.lojaRetiradaId:null,
             excursaoTexto:b.tipoEnvio==="EXCURSAO"?b.excursaoTexto:null,enderecoEntrega:b.tipoEnvio==="CORREIOS"?b.enderecoEntrega:null,

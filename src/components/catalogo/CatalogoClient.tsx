@@ -901,7 +901,7 @@ function CatalogoInner({ produtos, catalogo, banners, config, vendedorNome, qtdM
 }
 
 export default function CatalogoClient(props: Props) {
-  const isB2B = props.catalogo !== "VAREJO";
+  const isB2B = props.catalogo === "ATACADO";
   const [precoVisivel, setPrecoVisivel] = useState(!isB2B);
   const [modalAberto, setModalAberto] = useState(false);
 

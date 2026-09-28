@@ -9,7 +9,7 @@ interface ProdutoLookbook {
   grupo: { nome: string } | null;
   precoVarejoVista: number;
   precoAtacadoVista: number;
-  precoFabricaVista: number;
+
   img: string | null;
 }
 
@@ -21,7 +21,7 @@ const FILTROS = [
   { key: "TODOS", label: "Todos" },
   { key: "VAREJO", label: "Varejo" },
   { key: "ATACADO", label: "Atacado" },
-  { key: "FABRICA", label: "Fábrica" },
+
 ] as const;
 
 type FiltroKey = (typeof FILTROS)[number]["key"];
@@ -39,7 +39,7 @@ export default function LookbookClient({ produtos }: Props) {
     if (filtro === "TODOS") return true;
     if (filtro === "VAREJO") return Number(p.precoVarejoVista) > 0;
     if (filtro === "ATACADO") return Number(p.precoAtacadoVista) > 0;
-    if (filtro === "FABRICA") return Number(p.precoFabricaVista) > 0;
+
     return true;
   });
 

@@ -11,6 +11,10 @@ let state;
 const seller = { id: "seller-1", slug: "joao", telefone: "5581990000000", ativo: true, usuario: { nome: "João", ativo: true, perfil: "VENDEDOR" }, links: [{ id: "link-1", catalogo: "VAREJO", ativo: true }] };
 const product = { ativo: true, precoVarejoVista: 100, precoVarejoPrazo: 120, precoAtacadoVista: 70, precoAtacadoPrazo: 80, precoFabricaVista: 50, precoFabricaPrazo: 60, pesoGramas: 300, alturaCm: 5, larguraCm: 20, comprimentoCm: 25 };
 const prisma = {
+ acessoExclusivo: {
+ findFirst:async({where})=>state.exclusive && Object.entries(where).every(([k,v])=>k==="expiraEm" ? state.exclusive.expiraEm>v.gt : state.exclusive[k]===v) ? state.exclusive : null,
+ updateMany:async({where,data})=>{if(!state.exclusive||!Object.entries(where).every(([k,v])=>k==="expiraEm"?state.exclusive.expiraEm>v.gt:state.exclusive[k]===v))return{count:0};Object.assign(state.exclusive,data);return{count:1};}
+ },
  usuario: { findFirst: async ({where})=>state.actors[where.id]??null },
  vendedor: { findFirst: async ({where})=>{
    if (where.id && where.id!==seller.id) return null;
@@ -117,7 +121,9 @@ test("negative, fractional and zero quantities rejected",async()=>{
 });
 test("wholesale and factory minimum enforced by API",async()=>{
  for(const catalogo of ["ATACADO","FABRICA"]) {
- const r=await orders.POST(request("/api/pedidos","POST",validBody({catalogo})));assert.equal(r.status,400);
+ state.exclusive={id:"private-1",nome:"Cliente aprovado",telefone:"81988888888",ativo:true,versao:1};
+ const token=await jwt.encode({secret:process.env.NEXTAUTH_SECRET,token:{tipo:"EXCLUSIVO",acessoId:"private-1",versao:1},maxAge:3600});
+ const r=await orders.POST(request("/api/pedidos","POST",validBody({catalogo}),"cavalheiro_exclusivo="+token));assert.equal(r.status,400);
  }
 });
 test("duplicate variant lines aggregated before stock validation",async()=>{
@@ -183,4 +189,28 @@ test("cart quantities cannot exceed available stock, including old carts and dup
  assert.equal(items[0].quantidade, 12);
  assert.equal(items[1].quantidade, 4);
  assert.equal(ajustarCarrinho(items, {p:0,m:1})[0].quantidade, 1);
+});
+
+
+test("exclusive catalog requires an active invitation session for checkout and orders", async()=>{
+ for(const route of ["/api/checkout-dados?catalogo=FABRICA"])assert.equal((await checkout.GET(request(route))).status,403);
+ assert.equal((await orders.POST(request("/api/pedidos","POST",validBody({catalogo:"FABRICA"})))).status,403);
+ const token=await jwt.encode({secret:process.env.NEXTAUTH_SECRET,token:{tipo:"EXCLUSIVO",acessoId:"private-1",versao:1},maxAge:3600});
+ state.exclusive={id:"private-1",ativo:true,versao:1,nome:"Aprovado",telefone:"81988888888"};
+ const jar="cavalheiro_exclusivo="+token;
+ assert.equal((await checkout.GET(request("/api/checkout-dados?catalogo=FABRICA","GET",null,jar))).status,200);
+ state.exclusive.ativo=false;
+ assert.equal((await checkout.GET(request("/api/checkout-dados?catalogo=FABRICA","GET",null,jar))).status,403);
+ state.exclusive.ativo=true; state.exclusive.versao=2;
+ assert.equal((await checkout.GET(request("/api/checkout-dados?catalogo=FABRICA","GET",null,jar))).status,403);
+});
+test("invitation is single-use, expires, and cannot be replaced by a phone number",async()=>{
+ const crypto=require("node:crypto"); const activate=load("src/app/api/exclusivo/ativar/route.ts"); const token=crypto.randomBytes(32).toString("hex");
+ state.exclusive={id:"private-1",ativo:true,versao:1,nome:"Aprovado",telefone:"81988888888",usadoEm:null,expiraEm:new Date(Date.now()+60000),tokenHash:crypto.createHash("sha256").update(token).digest("hex")};
+ const first=await activate.POST(request("/api/exclusivo/ativar","POST",{token})); assert.equal(first.status,200);
+ assert.ok(first.cookies.get("cavalheiro_exclusivo"));
+ assert.equal((await activate.POST(request("/api/exclusivo/ativar","POST",{token}))).status,403);
+ assert.equal((await activate.POST(request("/api/exclusivo/ativar","POST",{telefone:"81988888888"}))).status,400);
+ state.exclusive.usadoEm=null;state.exclusive.tokenHash=crypto.createHash("sha256").update(token).digest("hex");state.exclusive.expiraEm=new Date(0);
+ assert.equal((await activate.POST(request("/api/exclusivo/ativar","POST",{token}))).status,403);
 });

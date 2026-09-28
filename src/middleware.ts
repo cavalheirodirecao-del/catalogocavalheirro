@@ -3,7 +3,7 @@ import type { NextRequest } from "next/server";
 import { getToken } from "next-auth/jwt";
 import { canAccessApi, isPublicApi } from "@/lib/access-policy";
 
-const ADMIN_ROUTES = ["/dashboard", "/produtos", "/estoque", "/pedidos", "/clientes", "/vendedores", "/banners", "/relatorios", "/alcance", "/lojas", "/excursoes", "/cupons", "/configuracoes", "/afiliados", "/usuarios", "/minha-senha", "/leads", "/catalogos", "/categorias", "/posts"];
+const ADMIN_ROUTES = ["/grandes-clientes", "/dashboard", "/produtos", "/estoque", "/pedidos", "/clientes", "/vendedores", "/banners", "/relatorios", "/alcance", "/lojas", "/excursoes", "/cupons", "/configuracoes", "/afiliados", "/usuarios", "/minha-senha", "/leads", "/catalogos", "/categorias", "/posts"];
 const under = (path: string, base: string) => path === base || path.startsWith(base + "/");
 
 export async function middleware(req: NextRequest) {

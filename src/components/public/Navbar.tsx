@@ -24,7 +24,6 @@ export default function Navbar() {
   const [revendedoresAberto, setRevendedoresAberto] = useState(false);
   const [afiliadosAberto, setAfiliadosAberto] = useState(false);
   const [qtdAtacado, setQtdAtacado] = useState(15);
-  const [qtdFabrica, setQtdFabrica] = useState(40);
   const fecharTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const fecharAfiliadosTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pathname = usePathname();
@@ -35,7 +34,6 @@ export default function Navbar() {
       .then(r => r.json())
       .then(data => {
         if (data?.qtdMinimaAtacado) setQtdAtacado(data.qtdMinimaAtacado);
-        if (data?.qtdMinimaFabrica) setQtdFabrica(data.qtdMinimaFabrica);
       })
       .catch(() => {});
   }, []);
@@ -46,12 +44,6 @@ export default function Navbar() {
       label: "Atacado Revenda",
       desc: `Mín. ${qtdAtacado} peças sortidas`,
       color: "#B8965A",
-    },
-    {
-      href: "/fabrica",
-      label: "Atacado Grandes Clientes",
-      desc: `+${qtdFabrica} peças — preço diferenciado`,
-      color: "#F5C400",
     },
   ];
 

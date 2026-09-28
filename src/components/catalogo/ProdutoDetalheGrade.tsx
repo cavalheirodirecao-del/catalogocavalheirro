@@ -115,7 +115,7 @@ function DetalheInner({ produto, catalogo, pathCatalogo, qtdMinima, similares }:
   const { adicionar, itens, totalItens } = useCart();
   const youtubeId = produto.videoUrl ? getYouTubeId(produto.videoUrl) : null;
 
-  const isB2B = catalogo !== "VAREJO";
+  const isB2B = catalogo === "ATACADO";
   const [precoVisivel, setPrecoVisivel] = useState(!isB2B);
   const [modalAberto, setModalAberto] = useState(false);
 

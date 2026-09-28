@@ -38,6 +38,7 @@ const menusSistema = [
 ];
 
 const menusGerais = [
+  { href: "/grandes-clientes", label: "Grandes clientes", icon: KeyRound },
   { href: "/dashboard",   label: "Dashboard",    icon: LayoutDashboard },
   { href: "/pedidos",     label: "Pedidos",      icon: ShoppingCart },
   { href: "/clientes",    label: "Clientes",     icon: Users },

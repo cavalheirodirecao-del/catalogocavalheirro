@@ -24,7 +24,7 @@ export default async function LookbookPage() {
     grupo: p.grupo ? { nome: p.grupo.nome } : null,
     precoVarejoVista: Number(p.precoVarejoVista),
     precoAtacadoVista: Number(p.precoAtacadoVista),
-    precoFabricaVista: Number(p.precoFabricaVista),
+
     img:
       p.imagemPrincipal ??
       p.cores[0]?.imagens[0]?.url ??

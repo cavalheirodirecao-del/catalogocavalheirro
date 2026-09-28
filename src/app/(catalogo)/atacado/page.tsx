@@ -59,7 +59,7 @@ export default async function AtacadoPage({ searchParams }: Props) {
 
   return (
     <CatalogoClient
-      produtos={produtos as any}
+      produtos={produtos.map(p => ({ ...p, precoFabricaVista: 0, precoFabricaPrazo: 0 })) as any}
       catalogo="ATACADO"
       vendedorSlug={vendedorSlug}
       vendedorNome={vendedorNome}

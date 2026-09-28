@@ -1,3 +1,4 @@
+import { exclusiveAccess } from "@/lib/exclusive-access";
 import { withApiAccess } from "@/lib/api-access";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
@@ -18,6 +19,7 @@ async function GETHandler(req: NextRequest) {
   ]);
   const primeiraCompra = !!telefone && telefone.length >= 10 && await prisma.pedido.count({ where: { telefoneClienteAvulso: telefone, status: { not: "CANCELADO" } } }) === 0;
   return NextResponse.json({
+    clienteExclusivo: catalogo === "FABRICA" ? await exclusiveAccess(req) : null,
     lojas, vendedores, primeiraCompra, vendedorVinculado: ref?.vendedor ?? null,
     configGeral: { taxaExcursao: Number(configGeral?.taxaExcursao ?? 5), qtdMinimaAtacado: configGeral?.qtdMinimaAtacado ?? 15, qtdMinimaFabrica: configGeral?.qtdMinimaFabrica ?? 40 },
   });
