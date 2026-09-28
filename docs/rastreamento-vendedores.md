@@ -70,6 +70,8 @@ build do Next e a checagem de tipos. A interface foi conferida em navegador
 local com dados fictícios. Não foram criados pedidos reais de teste.
 
 Os testes não substituem integração com PostgreSQL real, Melhor Envio e
-webhooks. Nesta entrega local, o SQL ainda não foi aplicado e o código não foi
-publicado. A revisão de RLS das tabelas do Supabase permanece pendente e não
+webhooks. O SQL foi aplicado no Supabase em 28/09/2026 (UTC), e a prévia da
+Vercel foi validada com navegação do link `wallyson` até o checkout, que exibiu
+o vendedor vinculado. A publicação em produção deve ser conferida no histórico
+de deployments da Vercel. A revisão de RLS das tabelas do Supabase permanece pendente e não
 deve ser considerada resolvida pelos controles das rotas Next.js.
