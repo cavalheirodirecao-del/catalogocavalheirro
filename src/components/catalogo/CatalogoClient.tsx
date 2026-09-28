@@ -1,4 +1,5 @@
 "use client";
+import ResponsiveBanner from "./ResponsiveBanner";
 
 import { useState, useMemo, useRef } from "react";
 import { ShoppingCart, X, Minus, Plus, Search, ChevronDown, Menu } from "lucide-react";
@@ -340,11 +341,7 @@ function BannerSlider({ banners }: { banners: Props["banners"] }) {
           <iframe src={embedUrl} className="w-full h-full" allow="autoplay; muted; loop" allowFullScreen />
         </div>
       ) : (
-        <>
-          {imgMobile && <img src={imgMobile} alt={banner.titulo ?? ""} className="w-full object-cover block sm:hidden" />}
-          {imgTablet && <img src={imgTablet} alt={banner.titulo ?? ""} className="w-full object-cover hidden sm:block lg:hidden" />}
-          {imgDesktop && <img src={imgDesktop} alt={banner.titulo ?? ""} className="w-full object-cover hidden lg:block" style={{ maxHeight: 500 }} />}
-        </>
+        imgMobile && imgTablet && imgDesktop ? <ResponsiveBanner mobile={imgMobile} tablet={imgTablet} desktop={imgDesktop} alt={banner.titulo || "Coleção Cavalheiro"} /> : null
       )}
       {(banner.titulo || banner.subtitulo) && (
         <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent text-white px-6 py-6">
@@ -610,7 +607,7 @@ function CatalogoInner({ produtos, catalogo, banners, config, vendedorNome, qtdM
         {/* Linha principal: logo / busca / carrinho */}
         <div className="max-w-7xl mx-auto px-4 h-14 flex items-center justify-between gap-4">
           <div className="shrink-0">
-            <p className={tema.logoClass}>{catalogo === "VAREJO" ? "Coleção Cavalheiro" : (config?.titulo ?? "Cavalheiro")}</p>
+            <h1 className={tema.logoClass}>{catalogo === "VAREJO" ? "Coleção Cavalheiro" : (config?.titulo ?? "Cavalheiro")}</h1>
             <p className={tema.logoLabel}>{catalogo === "VAREJO" ? "Escolha seu próximo favorito" : LABEL_CATALOGO[catalogo]}</p>
           </div>
 
@@ -848,6 +845,7 @@ function CatalogoInner({ produtos, catalogo, banners, config, vendedorNome, qtdM
       })()}
 
       <main className="max-w-7xl mx-auto px-4 py-6">
+        {catalogo === "VAREJO" && <p className="text-sm mb-5">Conheça nossa coleção de moda masculina. <Link href="/sobre" className="underline">Nossa história</Link> · <Link href="/contato" className="underline">Fale com a Cavalheiro</Link> · <Link href="/atacado" className="underline">Compras no atacado</Link></p>}
         <div className="flex items-center justify-between mb-4">
           <p className={`text-sm ${tema.countText}`}>
             {getFiltroLabel() ? (

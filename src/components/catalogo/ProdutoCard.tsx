@@ -1,4 +1,5 @@
 "use client";
+import CatalogImage from "./CatalogImage";
 
 import { useState } from "react";
 import { ShoppingCart, Play, Lock } from "lucide-react";
@@ -134,10 +135,9 @@ export default function ProdutoCard({ produto, catalogo, pathCatalogo, precoVisi
     return (
       <Link href={`/${pathCatalogo}/produto/${produto.id}`} className={`block ${t.card}`}>
         <div className={`aspect-[3/4] ${t.imgBg} overflow-hidden relative`}>
-          <img
+          <CatalogImage
             src={imagem ?? IMG_PADRAO}
             alt={produto.nome}
-            loading="lazy"
             className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
           />
           {produto.cores.length > 1 && (
@@ -157,7 +157,7 @@ export default function ProdutoCard({ produto, catalogo, pathCatalogo, precoVisi
         </div>
         <div className={t.innerPad}>
           <p className={t.codClass}>{produto.codigo}</p>
-          <p className={t.nameClass}>{produto.nome}</p>
+          <h2 className={t.nameClass}>{produto.nome}</h2>
           <div className="mt-2">
             {precoVisivel ? (
               <>
@@ -225,10 +225,9 @@ export default function ProdutoCard({ produto, catalogo, pathCatalogo, precoVisi
           />
         ) : (
           <>
-            <img
+            <CatalogImage
               src={imagem ?? IMG_PADRAO}
               alt={produto.nome}
-              loading="lazy"
               className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
             />
             {youtubeId && !mostrarVideo && (
@@ -254,7 +253,7 @@ export default function ProdutoCard({ produto, catalogo, pathCatalogo, precoVisi
 
       <div className={`${t.innerPad} flex flex-col flex-1`}>
         <p className={t.codClass}>{produto.codigo}</p>
-        <p className={t.nameClass}>{produto.nome}</p>
+        <h2 className={t.nameClass}>{produto.nome}</h2>
 
         <div className="mt-2">
           {precoVisivel ? (

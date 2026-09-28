@@ -180,9 +180,9 @@ export default async function BlogPage() {
                 </div>
 
                 {/* título */}
-                <h3 className="font-bebas text-2xl text-white leading-tight mb-2 group-hover:text-[#B8954A] transition-colors duration-300">
+                <h2 className="font-bebas text-2xl text-white leading-tight mb-2 group-hover:text-[#B8954A] transition-colors duration-300">
                   {post.titulo}
-                </h3>
+                </h2>
 
                 {/* resumo */}
                 {post.resumo && (

@@ -1,3 +1,4 @@
+import { SITE_URL, jsonLd as serializeJsonLd } from "@/lib/seo";
 import { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Link from "next/link";
@@ -24,12 +25,14 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return {
     title: `${post.titulo} — Cavalheiro Jeanswear`,
     description: post.resumo ?? `Leia ${post.titulo} no blog da Cavalheiro.`,
+    alternates: { canonical: `${SITE_URL}/blog/${encodeURIComponent(post.slug)}` },
     keywords: post.palavrasChave ?? undefined,
     authors: post.autor ? [{ name: post.autor }] : undefined,
     openGraph: {
       title: post.titulo,
       description: post.resumo ?? `Leia ${post.titulo} no blog da Cavalheiro.`,
       type: "article",
+      url: `${SITE_URL}/blog/${encodeURIComponent(post.slug)}`,
       publishedTime: post.publicadoEm?.toISOString(),
       images: post.imagemCapa ? [{ url: post.imagemCapa }] : [],
     },
@@ -39,7 +42,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 // Remove inline color/background styles que tornam o texto invisível no fundo escuro.
 // Preserva width/height (usados para redimensionar imagens no editor).
 function limparCoresInline(html: string): string {
-  return html.replace(/style="([^"]*)"/gi, (_, estilos: string) => {
+  return html.replace(/<(\/?)h1\b/gi, "<$1h2").replace(/style="([^"]*)"/gi, (_, estilos: string) => {
     const filtrado = estilos
       .split(";")
       .map((s: string) => s.trim())
@@ -76,17 +79,13 @@ export default async function BlogPostPage({ params }: Props) {
     publisher: {
       "@type": "Organization",
       name: "Cavalheiro Jeanswear",
-      logo: {
-        "@type": "ImageObject",
-        url: "/logo.png",
-      },
     },
     datePublished: post.publicadoEm?.toISOString() ?? post.criadoEm.toISOString(),
     dateModified: post.atualizadoEm.toISOString(),
     keywords: post.palavrasChave ?? "",
     mainEntityOfPage: {
       "@type": "WebPage",
-      "@id": `/blog/${post.slug}`,
+      "@id": `${SITE_URL}/blog/${encodeURIComponent(post.slug)}`,
     },
   };
 
@@ -95,7 +94,7 @@ export default async function BlogPostPage({ params }: Props) {
       {/* JSON-LD */}
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        dangerouslySetInnerHTML={{ __html: serializeJsonLd(jsonLd) }}
       />
 
       <main className="min-h-screen bg-[#0A0A0A] text-white">

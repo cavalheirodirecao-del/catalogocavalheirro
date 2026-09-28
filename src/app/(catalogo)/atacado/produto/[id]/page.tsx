@@ -1,9 +1,15 @@
+import { pageMetadata } from "@/lib/seo";
 import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
 import ProdutoDetalheGrade from "@/components/catalogo/ProdutoDetalheGrade";
 import { getPreco } from "@/lib/utils";
 
 export const revalidate = 300;
+export async function generateMetadata({ params }: Props) {
+  const produto = await prisma.produto.findUnique({ where: { id: params.id, ativo: true }, select: { nome: true, descricao: true } });
+  if (!produto) return { title: "Produto não encontrado", robots: { index: false } };
+  return pageMetadata(`atacado/produto/${params.id}`, `${produto.nome} — atacado`, produto.descricao?.slice(0, 160) || `Confira ${produto.nome} na Cavalheiro. Consulte cores e tamanhos disponíveis no atacado.`);
+}
 
 interface Props {
   params: { id: string };

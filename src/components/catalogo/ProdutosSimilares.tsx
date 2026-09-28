@@ -1,4 +1,5 @@
 "use client";
+import CatalogImage from "./CatalogImage";
 
 import Link from "next/link";
 import { formatarMoeda } from "@/lib/utils";
@@ -34,7 +35,7 @@ export default function ProdutosSimilares({ produtos, pathCatalogo, titulo = "Pr
             className="shrink-0 w-48 group"
           >
             <div className="aspect-[3/4] bg-gray-100 rounded-xl overflow-hidden mb-2">
-              <img
+              <CatalogImage sizes="192px"
                 src={p.imagemUrl ?? IMG_PADRAO}
                 alt={p.nome}
                 className="w-full h-full object-cover group-hover:scale-105 transition duration-300"

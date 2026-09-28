@@ -15,7 +15,7 @@ export default function Footer() {
             </p>
             <div className="flex gap-3 pt-1">
               <a
-                href="https://instagram.com"
+                href="https://www.instagram.com/cavalheiro.oficial/"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-white/40 hover:text-white transition text-xs uppercase tracking-widest font-space-mono"
@@ -24,7 +24,7 @@ export default function Footer() {
               </a>
               <span className="text-white/20">·</span>
               <a
-                href="https://wa.me/5581999999999"
+                href="https://wa.me/5581993393065"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-white/40 hover:text-white transition text-xs uppercase tracking-widest font-space-mono"
@@ -38,7 +38,8 @@ export default function Footer() {
           <div className="space-y-2">
             <p className="text-xs uppercase tracking-widest text-white/30 font-space-mono mb-3">Navegação</p>
             {[
-              { href: "/", label: "Home" },
+              { href: "/varejo", label: "Coleção" },
+              { href: "/blog", label: "Blog" },
               { href: "/sobre", label: "Sobre" },
               { href: "/lookbook", label: "Lookbook" },
               { href: "/contato", label: "Contato" },

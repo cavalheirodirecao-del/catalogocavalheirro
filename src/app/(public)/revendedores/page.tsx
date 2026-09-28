@@ -127,7 +127,7 @@ export default async function RevendedoresPage() {
                   </div>
 
                   <div className="relative z-10 p-6">
-                    <p className="font-dm-sans font-black text-3xl text-white mb-2">{cat.label}</p>
+                    <h2 className="font-dm-sans font-black text-3xl text-white mb-2">{cat.label}</h2>
                     <p className="text-sm text-white/60 font-dm-sans leading-relaxed mb-4">
                       {cat.desc}
                     </p>

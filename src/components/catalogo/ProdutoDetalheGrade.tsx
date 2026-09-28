@@ -1,4 +1,5 @@
 "use client";
+import CatalogImage from "./CatalogImage";
 
 import { useState, useMemo } from "react";
 import { ShoppingCart, X, Minus, Plus, ChevronLeft, ChevronRight, Play, Ruler, ZoomIn, Lock } from "lucide-react";
@@ -212,7 +213,7 @@ function DetalheInner({ produto, catalogo, pathCatalogo, qtdMinima, similares }:
             {thumbnails.map((img, i) => (
               <button key={img.url} onClick={() => { setFotoIdx(i); setTab("foto"); }}
                 className={`w-16 h-16 rounded-lg overflow-hidden border-2 transition ${fotoIdx === i && tab === "foto" ? "border-black" : "border-transparent hover:border-gray-300"}`}>
-                <img src={img.url} alt="" className="w-full h-full object-cover" />
+                <img loading="lazy" decoding="async" src={img.url} alt={`${produto.nome} — imagem ${i + 1}`} className="w-full h-full object-cover" />
               </button>
             ))}
             {youtubeId && (
@@ -232,7 +233,7 @@ function DetalheInner({ produto, catalogo, pathCatalogo, qtdMinima, similares }:
               </div>
             ) : (
               <div className="aspect-[3/4] relative group cursor-zoom-in" onClick={() => setLightboxOpen(true)}>
-                <img src={imgAtiva} alt={produto.nome} className="w-full h-full object-cover" />
+                <CatalogImage priority sizes="(max-width: 768px) 100vw, 50vw" src={imgAtiva} alt={produto.nome} className="w-full h-full object-cover" />
                 {/* Setas */}
                 {fotos.length > 1 && (
                   <>

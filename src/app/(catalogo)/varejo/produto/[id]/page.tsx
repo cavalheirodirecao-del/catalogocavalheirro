@@ -1,9 +1,15 @@
+import { SITE_URL, jsonLd, pageMetadata } from "@/lib/seo";
 import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
 import ProdutoDetalheVarejo from "@/components/catalogo/ProdutoDetalheVarejo";
 import { getPreco } from "@/lib/utils";
 
 export const revalidate = 300;
+export async function generateMetadata({ params }: Props) {
+  const produto = await prisma.produto.findUnique({ where: { id: params.id, ativo: true }, select: { nome: true, descricao: true } });
+  if (!produto) return { title: "Produto não encontrado", robots: { index: false } };
+  return pageMetadata(`varejo/produto/${params.id}`, `${produto.nome} — varejo`, produto.descricao?.slice(0, 160) || `Confira ${produto.nome} na Cavalheiro. Consulte cores e tamanhos disponíveis no varejo.`);
+}
 
 interface Props {
   params: { id: string };
@@ -50,6 +56,16 @@ export default async function VarejoProdutoPage({ params, searchParams }: Props)
   }));
 
   return (
+    <>
+    <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLd({
+      "@context": "https://schema.org", "@type": "Product", name: produto.nome, sku: produto.codigo,
+      description: produto.descricao ?? undefined,
+      image: produto.imagemPrincipal || produto.cores.flatMap(c => c.imagens.map(i => i.url)),
+      brand: { "@type": "Brand", name: "Cavalheiro" },
+      offers: Number(produto.precoVarejoVista) > 0 ? { "@type": "Offer", url: `${SITE_URL}/varejo/produto/${produto.id}`, priceCurrency: "BRL", price: Number(produto.precoVarejoVista),
+        availability: produto.cores.some(c => c.variantes.some(v => v.estoque && v.estoque.quantidade > v.estoque.pendente)) ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
+        seller: { "@id": `${SITE_URL}/#organization` } } : undefined,
+    }) }} />
     <ProdutoDetalheVarejo
       produto={{
         id: produto.id,
@@ -68,5 +84,6 @@ export default async function VarejoProdutoPage({ params, searchParams }: Props)
       vendedorSlug={vendedorSlug}
       similares={similares}
     />
+    </>
   );
 }

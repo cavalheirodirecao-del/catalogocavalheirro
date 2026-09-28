@@ -1,42 +1,16 @@
+import { SITE_URL, jsonLd } from "@/lib/seo";
 import { MessageCircle, MapPin, Clock, Phone, Mail } from "lucide-react";
 
-const LOJAS = [
-  {
-    cidade: "Toritama",
-    estado: "PE",
-    endereco: "Rua Principal, 123 — Centro",
-    horario: "Seg–Sab: 7h às 17h",
-    telefone: "(81) 99999-0001",
-    whatsapp: "5581999990001",
-    destaque: true,
-  },
-  {
-    cidade: "Caruaru",
-    estado: "PE",
-    endereco: "Av. das Nações, 456 — Centro",
-    horario: "Seg–Sab: 8h às 18h",
-    telefone: "(81) 99999-0002",
-    whatsapp: "5581999990002",
-    destaque: false,
-  },
-  {
-    cidade: "Santa Cruz do Capibaribe",
-    estado: "PE",
-    endereco: "Rua do Comércio, 789 — Centro",
-    horario: "Seg–Sab: 7h às 17h",
-    telefone: "(81) 99999-0003",
-    whatsapp: "5581999990003",
-    destaque: false,
-  },
-];
+const LOJAS = [{ cidade: "Caruaru", estado: "PE", endereco: "R. Rui Limeira Rosal, 425 — Petrópolis, Caruaru — PE, 55030-001", horario: "Consulte os horários pelo WhatsApp", telefone: "(81) 99339-3065", whatsapp: "5581993393065", destaque: false }];
 
 // WhatsApp principal (loja sede)
-const WHATSAPP_PRINCIPAL = "5581999990001";
+const WHATSAPP_PRINCIPAL = "5581993393065";
 const MSG_PADRAO = encodeURIComponent("Olá! Vim pelo site da Cavalheiro e gostaria de mais informações.");
 
 export default function ContatoPage() {
   return (
     <div className="bg-[#F8F8F6]">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLd({ "@context": "https://schema.org", "@type": "ClothingStore", "@id": `${SITE_URL}/contato#loja`, name: "Cavalheiro", url: `${SITE_URL}/contato`, telephone: "+55-81-99339-3065", email: "cavalheirodirecao@gmail.com", sameAs: ["https://www.instagram.com/cavalheiro.oficial/"], address: { "@type": "PostalAddress", streetAddress: "R. Rui Limeira Rosal, 425 — Petrópolis", addressLocality: "Caruaru", addressRegion: "PE", postalCode: "55030-001", addressCountry: "BR" } }) }} />
       {/* ── Hero ────────────────────────────────────────── */}
       <section className="bg-[#1C1C1A] py-28 px-4 relative overflow-hidden">
         <div
@@ -67,7 +41,7 @@ export default function ContatoPage() {
           <div>
             <h2 className="font-dm-sans font-bold text-2xl text-[#1C1C1A]">Atendimento rápido</h2>
             <p className="text-[#1C1C1A]/50 font-dm-sans mt-2">
-              Resposta em menos de 1 hora em horário comercial.
+              Tire suas dúvidas sobre produtos, pedidos e atendimento.
             </p>
           </div>
           <a
@@ -80,7 +54,7 @@ export default function ContatoPage() {
             Chamar no WhatsApp
           </a>
           <p className="text-xs text-[#1C1C1A]/30 font-space-mono">
-            SEG–SAB · 7H–17H · TORITAMA–PE
+            CARUARU–PE
           </p>
         </div>
       </section>
@@ -95,7 +69,7 @@ export default function ContatoPage() {
             </h2>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 gap-6">
             {LOJAS.map((loja) => (
               <div
                 key={loja.cidade}
@@ -148,18 +122,18 @@ export default function ContatoPage() {
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-10">
             <p className="font-space-mono text-xs tracking-[0.3em] text-[#1C1C1A]/40 uppercase mb-3">Localização</p>
-            <h2 className="font-dm-sans font-black text-3xl text-[#1C1C1A]">Loja Sede — Toritama, PE</h2>
+            <h2 className="font-dm-sans font-black text-3xl text-[#1C1C1A]">Cavalheiro — Caruaru, PE</h2>
           </div>
           <div className="rounded-2xl overflow-hidden border border-gray-200 shadow-sm">
             <iframe
-              src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d31537.18!2d-36.06!3d-8.00!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x7ab0f7b0b0b0b0b1%3A0x0!2sToritama%2C+PE!5e0!3m2!1spt-BR!2sbr!4v1234567890"
+              src="https://maps.google.com/maps?q=R.%20Rui%20Limeira%20Rosal%2C%20425%20Caruaru%20PE&output=embed"
               width="100%"
               height="400"
               style={{ border: 0 }}
               allowFullScreen
               loading="lazy"
               referrerPolicy="no-referrer-when-downgrade"
-              title="Mapa Cavalheiro Toritama"
+              title="Mapa Cavalheiro Caruaru"
             />
           </div>
         </div>
@@ -171,16 +145,16 @@ export default function ContatoPage() {
           <h2 className="font-dm-sans font-black text-2xl text-[#1C1C1A]">Siga nas redes</h2>
           <div className="flex items-center justify-center gap-4">
             <a
-              href="https://instagram.com"
+              href="https://www.instagram.com/cavalheiro.oficial/"
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center gap-2 bg-white border border-gray-200 rounded-full px-5 py-2.5 text-sm font-dm-sans font-semibold text-[#1C1C1A] hover:border-[#1C1C1A] transition"
             >
               <span className="text-base">📷</span>
-              @cavalheiro
+              @cavalheiro.oficial
             </a>
             <a
-              href="mailto:contato@cavalheiro.com.br"
+              href="mailto:cavalheirodirecao@gmail.com"
               className="flex items-center gap-2 bg-white border border-gray-200 rounded-full px-5 py-2.5 text-sm font-dm-sans font-semibold text-[#1C1C1A] hover:border-[#1C1C1A] transition"
             >
               <Mail size={16} />
