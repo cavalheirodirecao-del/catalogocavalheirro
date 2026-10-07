@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getToken } from "next-auth/jwt";
 import { withApiAccess } from "@/lib/api-access";
 import { prisma } from "@/lib/prisma";
-import { lerExportacaoFazAgilizar, ProdutoImportado } from "@/lib/faz-agilizar";
+import { lerExportacaoFazAgilizar, LinhaFazAgilizar, ProdutoImportado } from "@/lib/faz-agilizar";
 
 const PERFIS_PERMITIDOS = ["ADMIN", "GERENTE", "ESTOQUISTA"];
 type Grade = { id: string; itens: { id: string; valor: string }[] };
@@ -66,7 +66,7 @@ async function POSTHandler(req: NextRequest) {
       const { produto: fonte, grade, existente } = item;
       let gradeAtual = grade;
       if (!gradeAtual) {
-        const tamanhos = Array.from(new Set(fonte.variacoes.map(v => v.tamanho)));
+        const tamanhos: string[] = Array.from(new Set(fonte.variacoes.map((v: LinhaFazAgilizar) => v.tamanho)));
         const nomeGrade = `Faz Agilizar: ${tamanhos.join("/")}`;
         gradeAtual = await tx.grade.upsert({
           where: { nome: nomeGrade },
