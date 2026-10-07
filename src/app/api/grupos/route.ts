@@ -25,7 +25,7 @@ async function POSTHandler(request: NextRequest) {
     where: { nome: nome.trim() },
     update: {},
     create: { nome: nome.trim() },
-    select: { id: true, nome: true, ativo: true, imagemUrl: true, bannerUrl: true, subGrupos: { select: { id: true, grupoId: true, nome: true, ativo: true } } },
+    select: { id: true, nome: true, ativo: true, imagemUrl: true, bannerUrl: true },
   });
   return NextResponse.json(grupo);
 }
