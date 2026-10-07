@@ -29,10 +29,7 @@ async function montarPlano(csv: string, grupoId: string, subGrupoId: string) {
   const porCodigo = new Map(existentes.map((produto: any) => [produto.codigo, produto]));
   const plano = leitura.produtos.map(produto => {
     const grade = selecionarGrade(produto, grades);
-    if (!grade) {
-      // @ts-ignore Set iteration is supported by the runtime target.
-      leitura.erros.push(`${produto.codigo}: não existe uma grade cadastrada para os tamanhos ${[...new Set(produto.variacoes.map(v => v.tamanho))].join(", ")}.`);
-    }
+    // Grades ausentes serão criadas automaticamente na liberação da importação.
     return { produto, grade, existente: porCodigo.get(produto.codigo) ?? null };
   });
   return { ...leitura, plano };
@@ -67,10 +64,20 @@ async function POSTHandler(req: NextRequest) {
   await prisma.$transaction(async tx => {
     for (const item of plano.plano) {
       const { produto: fonte, grade, existente } = item;
-      if (!grade) throw new Error(`Grade não encontrada para ${fonte.codigo}.`);
+      let gradeAtual = grade;
+      if (!gradeAtual) {
+        const tamanhos = Array.from(new Set(fonte.variacoes.map(v => v.tamanho)));
+        const nomeGrade = `Faz Agilizar: ${tamanhos.join("/")}`;
+        gradeAtual = await tx.grade.upsert({
+          where: { nome: nomeGrade },
+          update: {},
+          create: { nome: nomeGrade, tipo: tamanhos.every(t => /^\d+$/.test(t)) ? "NUMERO" : "LETRA", itens: { create: tamanhos.map((valor, ordem) => ({ valor, ordem })) } },
+          include: { itens: true },
+        });
+      }
       const produto = existente ?? await tx.produto.create({
         data: {
-          codigo: fonte.codigo, nome: fonte.nome, grupoId, subGrupoId: subGrupoId || null, gradeId: grade.id,
+          codigo: fonte.codigo, nome: fonte.nome, grupoId, subGrupoId: subGrupoId || null, gradeId: gradeAtual.id,
           precoVarejoVista: fonte.origem === "VAREJO" ? fonte.precoAtacado : 0,
           precoVarejoPrazo: fonte.origem === "VAREJO" ? fonte.precoAtacado : 0,
           precoAtacadoVista: fonte.origem === "ATACADO" ? fonte.precoAtacado : 0,
@@ -83,7 +90,7 @@ async function POSTHandler(req: NextRequest) {
         : { nome: fonte.nome, precoAtacadoVista: fonte.precoAtacado, precoAtacadoPrazo: fonte.precoAtacado } });
 
       for (const variacao of fonte.variacoes) {
-        const gradeItem = grade.itens.find((i: { id: string; valor: string }) => i.valor.toUpperCase() === variacao.tamanho);
+        const gradeItem = gradeAtual.itens.find((i: { id: string; valor: string }) => i.valor.toUpperCase() === variacao.tamanho);
         if (!gradeItem) throw new Error(`Tamanho ${variacao.tamanho} não encontrado para ${fonte.codigo}.`);
         let cor = existente?.cores.find((c: any) => c.nome.toUpperCase() === variacao.cor) ?? null;
         if (!cor) cor = await tx.produtoCor.create({ data: { produtoId: produto.id, nome: variacao.cor } });
