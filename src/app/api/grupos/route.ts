@@ -9,7 +9,7 @@ async function GETHandler(req: NextRequest) {
     where: admin ? {} : { ativo: true },
     select: {
       id: true, nome: true, ativo: true, imagemUrl: true, bannerUrl: true,
-      subGrupos: { where: admin ? {} : { ativo: true }, orderBy: { nome: "asc" } },
+      subGrupos: { where: admin ? {} : { ativo: true }, orderBy: { nome: "asc" }, select: { id: true, grupoId: true, nome: true, ativo: true } },
       _count: { select: { produtos: true } },
     },
     orderBy: { nome: "asc" },
@@ -25,7 +25,7 @@ async function POSTHandler(request: NextRequest) {
     where: { nome: nome.trim() },
     update: {},
     create: { nome: nome.trim() },
-    select: { id: true, nome: true, ativo: true, imagemUrl: true, bannerUrl: true, subGrupos: true },
+    select: { id: true, nome: true, ativo: true, imagemUrl: true, bannerUrl: true, subGrupos: { select: { id: true, grupoId: true, nome: true, ativo: true } } },
   });
   return NextResponse.json(grupo);
 }

@@ -11,6 +11,7 @@ async function POSTHandler(req: NextRequest, { params }: { params: { id: string 
       nome: nome.trim(),
       grupoId: params.id,
     },
+    select: { id: true, grupoId: true, nome: true, ativo: true },
   });
   return NextResponse.json(subGrupo);
 }
