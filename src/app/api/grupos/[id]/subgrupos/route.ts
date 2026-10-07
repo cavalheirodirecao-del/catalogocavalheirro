@@ -10,10 +10,6 @@ async function POSTHandler(req: NextRequest, { params }: { params: { id: string 
     data: {
       nome: nome.trim(),
       grupoId: params.id,
-      ordem: Number(ordem) || 0,
-      slug: slug?.trim() || null,
-      titulo: titulo?.trim() || null,
-      iconeUrl: iconeUrl?.trim() || null,
     },
   });
   return NextResponse.json(subGrupo);

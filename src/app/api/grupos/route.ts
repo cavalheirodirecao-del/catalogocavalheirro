@@ -7,11 +7,9 @@ async function GETHandler(req: NextRequest) {
 
   const grupos = await prisma.grupo.findMany({
     where: admin ? {} : { ativo: true },
-    include: {
-      subGrupos: {
-        where: admin ? {} : { ativo: true },
-        orderBy: { nome: "asc" },
-      },
+    select: {
+      id: true, nome: true, ativo: true, imagemUrl: true, bannerUrl: true,
+      subGrupos: { where: admin ? {} : { ativo: true }, orderBy: { nome: "asc" } },
       _count: { select: { produtos: true } },
     },
     orderBy: { nome: "asc" },
@@ -27,7 +25,7 @@ async function POSTHandler(request: NextRequest) {
     where: { nome: nome.trim() },
     update: {},
     create: { nome: nome.trim() },
-    include: { subGrupos: true },
+    select: { id: true, nome: true, ativo: true, imagemUrl: true, bannerUrl: true, subGrupos: true },
   });
   return NextResponse.json(grupo);
 }

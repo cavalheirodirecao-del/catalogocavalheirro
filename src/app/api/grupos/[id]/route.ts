@@ -11,10 +11,6 @@ async function PATCHHandler(req: NextRequest, { params }: { params: { id: string
   if (ativo !== undefined) data.ativo = ativo;
   if ("imagemUrl" in body) data.imagemUrl = imagemUrl || null;
   if ("bannerUrl" in body) data.bannerUrl = bannerUrl || null;
-  if (ordem !== undefined) data.ordem = Number(ordem) || 0;
-  if ("slug" in body) data.slug = slug?.trim() || null;
-  if ("titulo" in body) data.titulo = titulo?.trim() || null;
-  if ("iconeUrl" in body) data.iconeUrl = iconeUrl?.trim() || null;
 
   const grupo = await prisma.grupo.update({ where: { id: params.id }, data });
   return NextResponse.json(grupo);

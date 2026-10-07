@@ -9,10 +9,6 @@ async function PATCHHandler(req: NextRequest, { params }: { params: { id: string
   const data: { nome?: string; ativo?: boolean; ordem?: number; slug?: string | null; titulo?: string | null; iconeUrl?: string | null } = {};
   if (nome !== undefined) data.nome = nome.trim();
   if (ativo !== undefined) data.ativo = ativo;
-  if (ordem !== undefined) data.ordem = Number(ordem) || 0;
-  if ("slug" in body) data.slug = slug?.trim() || null;
-  if ("titulo" in body) data.titulo = titulo?.trim() || null;
-  if ("iconeUrl" in body) data.iconeUrl = iconeUrl?.trim() || null;
 
   const subGrupo = await prisma.subGrupo.update({ where: { id: params.id }, data });
   return NextResponse.json(subGrupo);
