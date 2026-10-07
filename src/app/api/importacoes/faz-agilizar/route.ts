@@ -41,6 +41,8 @@ async function POSTHandler(req: NextRequest) {
   const grupoId = String(form.get("grupoId") ?? "");
   const subGrupoId = String(form.get("subGrupoId") ?? "");
   const acao = String(form.get("acao") ?? "validar");
+  let ajustes: Record<string, { grupoId?: string; subGrupoId?: string; precoVarejo?: number; precoAtacado?: number }> = {};
+  try { ajustes = JSON.parse(String(form.get("ajustes") ?? "{}")); } catch { return NextResponse.json({ erro: "Ajustes inválidos." }, { status: 400 }); }
   if (!(arquivo instanceof File)) return NextResponse.json({ erro: "Selecione um arquivo CSV." }, { status: 400 });
   if (arquivo.size > 8 * 1024 * 1024) return NextResponse.json({ erro: "O arquivo deve ter no máximo 8 MB." }, { status: 400 });
 
@@ -51,7 +53,7 @@ async function POSTHandler(req: NextRequest) {
     novos: plano.plano.filter(p => !p.existente).length,
     existentes: plano.plano.filter(p => p.existente).length,
     erros: plano.erros,
-    amostra: plano.plano.slice(0, 12).map((p: any) => ({ codigo: p.produto.codigo, nome: p.produto.nome, variacoes: p.produto.variacoes.length, situacao: p.existente ? "ATUALIZAR" : "CRIAR" })),
+    amostra: plano.plano.map((p: any) => ({ codigo: p.produto.codigo, nome: p.produto.nome, variacoes: p.produto.variacoes.length, situacao: p.existente ? "ATUALIZAR" : "CRIAR", grupoId: p.existente?.grupoId ?? grupoId, subGrupoId: p.existente?.subGrupoId ?? subGrupoId, precoVarejo: p.existente?.precoVarejoVista ?? (p.produto.origem === "VAREJO" ? p.produto.precoAtacado : 0), precoAtacado: p.existente?.precoAtacadoVista ?? (p.produto.origem === "ATACADO" ? p.produto.precoAtacado : 0) })),
   };
   if (acao === "validar") return NextResponse.json(resumo);
   if (acao !== "liberar") return NextResponse.json({ erro: "Ação inválida." }, { status: 400 });
@@ -64,6 +66,11 @@ async function POSTHandler(req: NextRequest) {
   await prisma.$transaction(async tx => {
     for (const item of plano.plano) {
       const { produto: fonte, grade, existente } = item;
+      const ajuste = ajustes[fonte.codigo] ?? {};
+      const produtoGrupoId = ajuste.grupoId || existente?.grupoId || grupoId;
+      const produtoSubGrupoId = ajuste.subGrupoId || existente?.subGrupoId || subGrupoId || null;
+      const precoVarejo = Number.isFinite(ajuste.precoVarejo) ? Number(ajuste.precoVarejo) : (fonte.origem === "VAREJO" ? fonte.precoAtacado : (existente?.precoVarejoVista ?? 0));
+      const precoAtacado = Number.isFinite(ajuste.precoAtacado) ? Number(ajuste.precoAtacado) : (fonte.origem === "ATACADO" ? fonte.precoAtacado : (existente?.precoAtacadoVista ?? 0));
       let gradeAtual = grade;
       if (!gradeAtual) {
         const tamanhos: string[] = Array.from(new Set(fonte.variacoes.map((v: LinhaFazAgilizar) => v.tamanho)));
@@ -77,17 +84,13 @@ async function POSTHandler(req: NextRequest) {
       }
       const produto = existente ?? await tx.produto.create({
         data: {
-          codigo: fonte.codigo, nome: fonte.nome, grupoId, subGrupoId: subGrupoId || null, gradeId: gradeAtual.id,
-          precoVarejoVista: fonte.origem === "VAREJO" ? fonte.precoAtacado : 0,
-          precoVarejoPrazo: fonte.origem === "VAREJO" ? fonte.precoAtacado : 0,
-          precoAtacadoVista: fonte.origem === "ATACADO" ? fonte.precoAtacado : 0,
-          precoAtacadoPrazo: fonte.origem === "ATACADO" ? fonte.precoAtacado : 0,
+          codigo: fonte.codigo, nome: fonte.nome, grupoId: produtoGrupoId, subGrupoId: produtoSubGrupoId, gradeId: gradeAtual.id,
+          precoVarejoVista: precoVarejo, precoVarejoPrazo: precoVarejo,
+          precoAtacadoVista: precoAtacado, precoAtacadoPrazo: precoAtacado,
           precoFabricaVista: 0, precoFabricaPrazo: 0,
         },
       });
-      if (existente) await tx.produto.update({ where: { id: produto.id }, data: fonte.origem === "VAREJO"
-        ? { nome: fonte.nome, precoVarejoVista: fonte.precoAtacado, precoVarejoPrazo: fonte.precoAtacado }
-        : { nome: fonte.nome, precoAtacadoVista: fonte.precoAtacado, precoAtacadoPrazo: fonte.precoAtacado } });
+      if (existente) await tx.produto.update({ where: { id: produto.id }, data: { nome: fonte.nome, grupoId: produtoGrupoId, subGrupoId: produtoSubGrupoId, precoVarejoVista: precoVarejo, precoVarejoPrazo: precoVarejo, precoAtacadoVista: precoAtacado, precoAtacadoPrazo: precoAtacado } });
 
       for (const variacao of fonte.variacoes) {
         const gradeItem = gradeAtual.itens.find((i: { id: string; valor: string }) => i.valor.toUpperCase() === variacao.tamanho);
