@@ -14,7 +14,7 @@ function selecionarGrade(produto: ProdutoImportado, grades: Grade[]) {
     .sort((a, b) => a.itens.length - b.itens.length)[0] ?? null;
 }
 
-async function montarPlano(csv: string, grupoId: string) {
+async function montarPlano(csv: string, grupoId: string, subGrupoId: string) {
   const leitura = lerExportacaoFazAgilizar(csv);
   if (!grupoId) leitura.erros.push("Escolha uma categoria para os produtos novos.");
   if (leitura.erros.length) return { ...leitura, plano: [] as any[] };
@@ -25,6 +25,7 @@ async function montarPlano(csv: string, grupoId: string) {
     prisma.produto.findMany({ where: { codigo: { in: leitura.produtos.map(p => p.codigo) } }, include: { cores: { include: { variantes: { include: { estoque: true, gradeItem: true } } } } } }),
   ]);
   if (!grupo) leitura.erros.push("A categoria selecionada não existe.");
+  if (subGrupoId && !(await prisma.subGrupo.findFirst({ where: { id: subGrupoId, grupoId }, select: { id: true } }))) leitura.erros.push("A subcategoria selecionada não pertence à categoria.");
   const porCodigo = new Map(existentes.map((produto: any) => [produto.codigo, produto]));
   const plano = leitura.produtos.map(produto => {
     const grade = selecionarGrade(produto, grades);
@@ -41,11 +42,12 @@ async function POSTHandler(req: NextRequest) {
   const form = await req.formData();
   const arquivo = form.get("arquivo");
   const grupoId = String(form.get("grupoId") ?? "");
+  const subGrupoId = String(form.get("subGrupoId") ?? "");
   const acao = String(form.get("acao") ?? "validar");
   if (!(arquivo instanceof File)) return NextResponse.json({ erro: "Selecione um arquivo CSV." }, { status: 400 });
   if (arquivo.size > 8 * 1024 * 1024) return NextResponse.json({ erro: "O arquivo deve ter no máximo 8 MB." }, { status: 400 });
 
-  const plano = await montarPlano(await arquivo.text(), grupoId);
+  const plano = await montarPlano(await arquivo.text(), grupoId, subGrupoId);
   const resumo = {
     linhas: plano.itens.length,
     produtos: plano.produtos?.length ?? 0,
@@ -68,7 +70,7 @@ async function POSTHandler(req: NextRequest) {
       if (!grade) throw new Error(`Grade não encontrada para ${fonte.codigo}.`);
       const produto = existente ?? await tx.produto.create({
         data: {
-          codigo: fonte.codigo, nome: fonte.nome, grupoId, gradeId: grade.id,
+          codigo: fonte.codigo, nome: fonte.nome, grupoId, subGrupoId: subGrupoId || null, gradeId: grade.id,
           precoVarejoVista: fonte.origem === "VAREJO" ? fonte.precoAtacado : 0,
           precoVarejoPrazo: fonte.origem === "VAREJO" ? fonte.precoAtacado : 0,
           precoAtacadoVista: fonte.origem === "ATACADO" ? fonte.precoAtacado : 0,

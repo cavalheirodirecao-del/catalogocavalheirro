@@ -15,6 +15,7 @@ export default function ImportarProdutosPage() {
   const [arquivo, setArquivo] = useState<File | null>(null);
   const [grupos, setGrupos] = useState<Grupo[]>([]);
   const [grupoId, setGrupoId] = useState("");
+  const [subGrupoId, setSubGrupoId] = useState("");
   const [resultado, setResultado] = useState<Resultado | null>(null);
   const [carregando, setCarregando] = useState(false);
   const [liberado, setLiberado] = useState(false);
@@ -29,6 +30,7 @@ export default function ImportarProdutosPage() {
     const dados = new FormData();
     dados.append("arquivo", arquivo);
     dados.append("grupoId", grupoId);
+    dados.append("subGrupoId", subGrupoId);
     dados.append("acao", acao);
     const resposta = await fetch("/api/importacoes/faz-agilizar", { method: "POST", body: dados });
     const json = await resposta.json();
@@ -58,7 +60,7 @@ export default function ImportarProdutosPage() {
       </div>
 
       <div className="bg-white border border-gray-200 rounded-lg p-5 space-y-5">
-        <div className="grid md:grid-cols-2 gap-4">
+        <div className="grid md:grid-cols-3 gap-4">
           <label className="block">
             <span className="text-sm font-medium text-gray-700">Arquivo CSV</span>
             <input type="file" accept=".csv,text/csv" onChange={e => { setArquivo(e.target.files?.[0] ?? null); setResultado(null); setLiberado(false); }} className="mt-2 block w-full text-sm file:mr-3 file:border-0 file:bg-gray-100 file:px-3 file:py-2 file:rounded-md file:text-sm file:font-medium hover:file:bg-gray-200" />
@@ -72,6 +74,7 @@ export default function ImportarProdutosPage() {
             </select>
             <p className="mt-2 text-xs text-gray-500">Produtos já cadastrados mantêm sua categoria atual.</p>
           </label>
+          <label className="block"><span className="text-sm font-medium text-gray-700">Subcategoria</span><select value={subGrupoId} onChange={e => { setSubGrupoId(e.target.value); setResultado(null); setLiberado(false); }} disabled={!grupoId} className="mt-2 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white disabled:opacity-40"><option value="">Nenhuma</option>{(grupos.find(g => g.id === grupoId)?.subGrupos ?? []).map(s => <option key={s.id} value={s.id}>{s.nome}</option>)}</select><p className="mt-2 text-xs text-gray-500">Aplicada aos produtos novos.</p></label>
         </div>
         <div className="rounded-lg bg-amber-50 border border-amber-200 p-3 flex gap-2 text-sm text-amber-800">
           <AlertTriangle size={17} className="shrink-0 mt-0.5" />
