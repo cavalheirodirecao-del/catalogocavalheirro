@@ -1,5 +1,3 @@
-import { exclusiveAccess } from "@/lib/exclusive-access";
-import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
@@ -12,8 +10,6 @@ interface Props {
 }
 
 export default async function FabricaPage({ searchParams }: Props) {
-  if (!await exclusiveAccess()) redirect("/acesso-exclusivo");
-
   const vendedorSlug = searchParams.vendedor ?? null;
 
   let vendedorNome: string | null = null;

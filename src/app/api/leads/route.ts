@@ -31,7 +31,7 @@ async function GETHandler(req: NextRequest) {
 async function POSTHandler(req: NextRequest) {
   try {
     const { nome, telefone, instagram, catalogo } = await req.json();
-    if (catalogo !== "ATACADO") return NextResponse.json({ erro: "Este catálogo exige convite individual." }, { status: 403 });
+    if (!["ATACADO", "FABRICA"].includes(catalogo)) return NextResponse.json({ erro: "Catálogo inválido." }, { status: 400 });
 
     if (!nome || !telefone || !catalogo) {
       return NextResponse.json({ error: "nome, telefone e catalogo são obrigatórios" }, { status: 400 });

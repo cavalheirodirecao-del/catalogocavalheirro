@@ -28,7 +28,6 @@ export function withApiAccess(handler: (...args: any[]) => Promise<Response>) {
     if (path !== "/api/visitas" && (isPublicApi(path, req.method, url.searchParams) || path === "/api/leads")) {
       const body = req.method === "POST" ? await req.clone().json().catch(() => null) : null;
       const catalogo = body?.catalogo ?? url.searchParams.get("catalogo");
-      if (catalogo === "FABRICA" && (path.startsWith("/api/leads") || !await exclusiveAccess(req))) return NextResponse.json({ erro: "Acesso exclusivo. Solicite um convite individual à equipe Cavalheiro." }, { status: 403 });
     }
     const response = await handler(req, context);
     response.headers.set("Cache-Control", "private, no-store");
