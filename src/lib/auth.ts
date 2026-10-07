@@ -23,12 +23,15 @@ export const authOptions: NextAuthOptions = {
 
         const usuario = await prisma.usuario.findUnique({
           where: { email: credentials.email },
-          include: { vendedor: true },
+          select: {
+            id: true, nome: true, email: true, senha: true, perfil: true, ativo: true,
+            vendedor: { select: { slug: true, lojaId: true } },
+          },
         });
 
         if (!usuario || !usuario.ativo) return null;
         const lojaId = String((credentials as any)?.lojaId ?? "");
-        if (usuario.lojaId && usuario.lojaId !== lojaId) return null;
+        if (usuario.vendedor?.lojaId && usuario.vendedor.lojaId !== lojaId) return null;
 
         const senhaValida = await bcrypt.compare(senhaInput, usuario.senha);
         if (!senhaValida) return null;
@@ -39,7 +42,7 @@ export const authOptions: NextAuthOptions = {
           email: usuario.email,
           perfil: usuario.perfil,
           vendedorSlug: usuario.vendedor?.slug ?? null,
-          lojaId: usuario.lojaId ?? (lojaId || null),
+          lojaId: usuario.vendedor?.lojaId ?? (lojaId || null),
         };
       },
     }),

@@ -12,7 +12,7 @@ export default async function LookbookPage() {
         include: { imagens: { orderBy: { ordem: "asc" }, take: 1 } },
         take: 1,
       },
-      grupo: true,
+      grupo: { select: { id: true, nome: true, imagemUrl: true, bannerUrl: true, ativo: true } },
     },
     orderBy: { criadoEm: "desc" },
     take: 60,

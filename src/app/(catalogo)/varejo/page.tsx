@@ -28,8 +28,8 @@ export default async function VarejoPage({ searchParams }: Props) {
     prisma.produto.findMany({
       where: { ativo: true },
       include: {
-        grupo: true,
-        subGrupo: true,
+        grupo: { select: { id: true, nome: true, imagemUrl: true, bannerUrl: true, ativo: true } },
+        subGrupo: { select: { id: true, nome: true, grupoId: true, ativo: true } },
         cores: {
           where: { ativo: true },
           include: {
