@@ -65,17 +65,18 @@ export function lerExportacaoFazAgilizar(csv: string) {
     const descricao = campos[produtoIndex] ?? "";
     if (!descricao.trim()) continue;
     const encontrado = descricao.match(/^\s*(.+?)\s*-\s*REF:\s*(.+)\s*-\s*([^()]+?)\s*\(\s*([^)]+?)\s*\)\s*$/i);
+    const semCor = descricao.match(/^\s*(.+?)\s*-\s*REF:\s*(.+?)\s*$/i);
     const estoque = quantidade(campos[estoqueIndex] ?? "");
-    if (!encontrado || estoque === null) {
+    if ((!encontrado && !semCor) || estoque === null) {
       erros.push(`Linha ${indice + 1}: formato de produto ou estoque inválido.`);
       continue;
     }
     itens.push({
       linha: indice + 1,
-      nome: encontrado[1].replace(/\s+/g, " ").trim(),
-      codigo: encontrado[2].trim(),
-      tamanho: encontrado[3].trim().toUpperCase(),
-      cor: encontrado[4].replace(/\s+/g, " ").trim().toUpperCase(),
+      nome: (encontrado?.[1] ?? semCor?.[1] ?? "").replace(/\s+/g, " ").trim(),
+      codigo: (encontrado?.[2] ?? semCor?.[2] ?? "").trim(),
+      tamanho: encontrado?.[3].trim().toUpperCase() ?? "UNICO",
+      cor: encontrado?.[4].replace(/\s+/g, " ").trim().toUpperCase() ?? "VARIADA",
       estoque,
       precoAtacado: moeda(campos[precoIndex] ?? ""),
     });
