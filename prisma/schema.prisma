@@ -362,6 +362,10 @@ model Grupo {
   ativo     Boolean @default(true)
   imagemUrl String?
   bannerUrl String?
+  ordem     Int     @default(0)
+  slug      String? @unique
+  titulo    String?
+  iconeUrl  String?
 
   subGrupos SubGrupo[]
   produtos  Produto[]
@@ -373,10 +377,15 @@ model SubGrupo {
   grupo   Grupo   @relation(fields: [grupoId], references: [id])
   nome    String
   ativo   Boolean @default(true)
+  ordem   Int     @default(0)
+  slug    String?
+  titulo  String?
+  iconeUrl String?
 
   produtos Produto[]
 
   @@unique([grupoId, nome])
+  @@unique([grupoId, slug])
 }
 
 // ─────────────────────────────────────────

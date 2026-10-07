@@ -4,13 +4,17 @@ import { prisma } from "@/lib/prisma";
 
 async function PATCHHandler(req: NextRequest, { params }: { params: { id: string } }) {
   const body = await req.json();
-  const { nome, ativo, imagemUrl, bannerUrl } = body;
+  const { nome, ativo, imagemUrl, bannerUrl, ordem, slug, titulo, iconeUrl } = body;
 
-  const data: { nome?: string; ativo?: boolean; imagemUrl?: string | null; bannerUrl?: string | null } = {};
+  const data: { nome?: string; ativo?: boolean; imagemUrl?: string | null; bannerUrl?: string | null; ordem?: number; slug?: string | null; titulo?: string | null; iconeUrl?: string | null } = {};
   if (nome !== undefined) data.nome = nome.trim();
   if (ativo !== undefined) data.ativo = ativo;
   if ("imagemUrl" in body) data.imagemUrl = imagemUrl || null;
   if ("bannerUrl" in body) data.bannerUrl = bannerUrl || null;
+  if (ordem !== undefined) data.ordem = Number(ordem) || 0;
+  if ("slug" in body) data.slug = slug?.trim() || null;
+  if ("titulo" in body) data.titulo = titulo?.trim() || null;
+  if ("iconeUrl" in body) data.iconeUrl = iconeUrl?.trim() || null;
 
   const grupo = await prisma.grupo.update({ where: { id: params.id }, data });
   return NextResponse.json(grupo);

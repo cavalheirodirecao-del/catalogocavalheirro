@@ -3,13 +3,17 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
 async function POSTHandler(req: NextRequest, { params }: { params: { id: string } }) {
-  const { nome } = await req.json();
+  const { nome, ordem, slug, titulo, iconeUrl } = await req.json();
   if (!nome?.trim()) return NextResponse.json({ erro: "Nome obrigatório." }, { status: 400 });
 
   const subGrupo = await prisma.subGrupo.create({
     data: {
       nome: nome.trim(),
       grupoId: params.id,
+      ordem: Number(ordem) || 0,
+      slug: slug?.trim() || null,
+      titulo: titulo?.trim() || null,
+      iconeUrl: iconeUrl?.trim() || null,
     },
   });
   return NextResponse.json(subGrupo);
