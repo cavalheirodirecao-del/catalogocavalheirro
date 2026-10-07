@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { CheckCircle2, FileUp, AlertTriangle, Upload, ShieldCheck } from "lucide-react";
 
-type Grupo = { id: string; nome: string };
+type Grupo = { id: string; nome: string; subGrupos: { id: string; nome: string }[] };
 type Resultado = {
   linhas: number; produtos: number; novos: number; existentes: number;
   erros: string[];
