@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import Sidebar from "@/components/admin/Sidebar";
 import SessionWrapper from "@/components/admin/SessionWrapper";
+import JobNotifier from "@/components/admin/JobNotifier";
 
 export const dynamic = "force-dynamic";
 
@@ -24,6 +25,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
       <div className="flex min-h-screen bg-gray-50">
         <Sidebar />
         <main className="flex-1 p-6 overflow-auto">{children}</main>
+        <JobNotifier />
       </div>
     </SessionWrapper>
   );
