@@ -140,6 +140,7 @@ model Loja {
 
   pedidos    Pedido[]   @relation("LojaRetirada")
   vendedores Vendedor[]
+  usuarios   Usuario[]
 }
 
 // ─────────────────────────────────────────
@@ -173,6 +174,8 @@ model Usuario {
   ativo        Boolean       @default(true)
   criadoEm    DateTime      @default(now())
   atualizadoEm DateTime     @updatedAt
+  lojaId       String?
+  loja         Loja?        @relation(fields: [lojaId], references: [id])
 
   vendedor           Vendedor?
   afiliado           Afiliado?

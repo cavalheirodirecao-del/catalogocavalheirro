@@ -14,6 +14,7 @@ export const authOptions: NextAuthOptions = {
       credentials: {
         email: { label: "Email", type: "email" },
         senha: { label: "Senha", type: "password" },
+        lojaId: { label: "Filial", type: "text" },
       },
       async authorize(credentials) {
         // Aceita tanto "senha" (login admin) quanto "password" (login afiliado)
@@ -26,6 +27,8 @@ export const authOptions: NextAuthOptions = {
         });
 
         if (!usuario || !usuario.ativo) return null;
+        const lojaId = String((credentials as any)?.lojaId ?? "");
+        if (usuario.lojaId && usuario.lojaId !== lojaId) return null;
 
         const senhaValida = await bcrypt.compare(senhaInput, usuario.senha);
         if (!senhaValida) return null;
@@ -36,6 +39,7 @@ export const authOptions: NextAuthOptions = {
           email: usuario.email,
           perfil: usuario.perfil,
           vendedorSlug: usuario.vendedor?.slug ?? null,
+          lojaId: usuario.lojaId ?? (lojaId || null),
         };
       },
     }),
@@ -46,6 +50,7 @@ export const authOptions: NextAuthOptions = {
         token.id = user.id;
         token.perfil = (user as any).perfil;
         token.vendedorSlug = (user as any).vendedorSlug;
+        token.lojaId = (user as any).lojaId;
       }
       return token;
     },
@@ -54,6 +59,7 @@ export const authOptions: NextAuthOptions = {
         (session.user as any).id = token.id;
         (session.user as any).perfil = token.perfil;
         (session.user as any).vendedorSlug = token.vendedorSlug;
+        (session.user as any).lojaId = token.lojaId;
       }
       return session;
     },

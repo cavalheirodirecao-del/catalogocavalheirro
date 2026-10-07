@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 
@@ -10,6 +10,10 @@ export default function LoginPage() {
   const [senha, setSenha] = useState("");
   const [erro, setErro] = useState("");
   const [carregando, setCarregando] = useState(false);
+  const [lojas, setLojas] = useState<{ id: string; nome: string; cidade: string }[]>([]);
+  const [lojaId, setLojaId] = useState("");
+
+  useEffect(() => { fetch("/api/lojas/public").then(r => r.ok ? r.json() : []).then(setLojas).catch(() => setLojas([])); }, []);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -19,6 +23,7 @@ export default function LoginPage() {
     const resultado = await signIn("credentials", {
       email,
       senha,
+      lojaId,
       redirect: false,
     });
 
@@ -38,6 +43,13 @@ export default function LoginPage() {
         <p className="text-center text-gray-500 text-sm mb-6">Painel Administrativo</p>
 
         <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Filial</label>
+            <select value={lojaId} onChange={e => setLojaId(e.target.value)} required={lojas.length > 0} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-black">
+              <option value="">Selecione a filial</option>
+              {lojas.map(loja => <option key={loja.id} value={loja.id}>{loja.nome}{loja.cidade ? ` - ${loja.cidade}` : ""}</option>)}
+            </select>
+          </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
             <input

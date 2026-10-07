@@ -1,0 +1,6 @@
+ALTER TABLE "Usuario" ADD COLUMN IF NOT EXISTS "lojaId" TEXT;
+DO $$ BEGIN
+  ALTER TABLE "Usuario" ADD CONSTRAINT "Usuario_lojaId_fkey" FOREIGN KEY ("lojaId") REFERENCES "Loja"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+CREATE INDEX IF NOT EXISTS "Usuario_lojaId_idx" ON "Usuario"("lojaId");
