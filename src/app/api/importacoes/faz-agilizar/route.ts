@@ -90,7 +90,7 @@ async function POSTHandler(req: NextRequest) {
           precoFabricaVista: 0, precoFabricaPrazo: 0,
         },
       });
-      if (existente) await tx.produto.update({ where: { id: produto.id }, data: { nome: fonte.nome, grupoId: produtoGrupoId, subGrupoId: produtoSubGrupoId, precoVarejoVista: precoVarejo, precoVarejoPrazo: precoVarejo, precoAtacadoVista: precoAtacado, precoAtacadoPrazo: precoAtacado } });
+      if (existente) await tx.produto.update({ where: { id: produto.id }, data: { nome: fonte.nome, grupoId: produtoGrupoId, subGrupoId: produtoSubGrupoId, gradeId: gradeAtual.id, precoVarejoVista: precoVarejo, precoVarejoPrazo: precoVarejo, precoAtacadoVista: precoAtacado, precoAtacadoPrazo: precoAtacado } });
 
       for (const variacao of fonte.variacoes) {
         const gradeItem = gradeAtual.itens.find((i: { id: string; valor: string }) => i.valor.toUpperCase() === variacao.tamanho);
