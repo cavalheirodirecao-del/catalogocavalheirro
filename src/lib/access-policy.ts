@@ -13,7 +13,7 @@ export function canAccessApi(perfil: string, path: string, method: string) {
   if (path === "/api/minha-senha") return true;
   if (perfil === "AFILIADO") return path === "/api/afiliados/me" && method === "GET";
   if (perfil === "VENDEDOR") return method === "GET" && (path === "/api/admin/alcance" || /^\/api\/pedidos(?:\/[^/]+)?$/.test(path));
-  if (perfil === "ESTOQUISTA") return path.startsWith("/api/estoque") || (method === "GET" && /^\/api\/(produtos|grades|pedidos)(\/|$)/.test(path)) || (method === "PUT" && /^\/api\/pedidos\/[^/]+$/.test(path));
+  if (perfil === "ESTOQUISTA") return path.startsWith("/api/estoque") || path.startsWith("/api/importacoes") || (method === "GET" && /^\/api\/(produtos|grades|pedidos)(\/|$)/.test(path)) || (method === "PUT" && /^\/api\/pedidos\/[^/]+$/.test(path));
   if (perfil === "GERENTE") return !/^\/api\/(usuarios|configuracoes)(\/|$)/.test(path) && !(path.startsWith("/api/afiliados") && method !== "GET");
   return false;
 }

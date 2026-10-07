@@ -21,7 +21,7 @@ import {
   Newspaper,
   Plus,
   Warehouse,
-  ArrowDownToLine,
+  ArrowDownToLine, Upload, Download,
   History,
   ChevronDown,
   Users2,
@@ -54,6 +54,8 @@ const menusGerais = [
 const subItensProdutos = [
   { href: "/produtos",                       label: "Produtos",          icon: Package },
   { href: "/produtos/novo",                  label: "Novo produto",      icon: Plus },
+  { href: "/produtos/importar",              label: "Importar CSV",      icon: Upload },
+  { href: "/produtos/exportar",              label: "Exportar catálogo", icon: Download },
   { href: "/categorias",                     label: "Categorias",        icon: Tag },
   { href: "/estoque",                        label: "Estoque",           icon: Warehouse },
   { href: "/estoque/movimentacao/nova",      label: "Nova movimentação", icon: ArrowDownToLine },
