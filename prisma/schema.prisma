@@ -399,6 +399,7 @@ model Grade {
   id   String    @id @default(cuid())
   nome String    @unique
   tipo TipoGrade
+  ativo Boolean  @default(true)
 
   itens    GradeItem[]
   produtos Produto[]
