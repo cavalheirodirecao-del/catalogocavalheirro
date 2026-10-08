@@ -27,11 +27,13 @@ import {
   Users2,
   Wallet,
   KeyRound,
+  SlidersHorizontal,
 } from "lucide-react";
 import { signOut, useSession } from "next-auth/react";
 import { useState, useEffect } from "react";
 
 const menusSistema = [
+  { href: "/parametros",     label: "Parâmetros",     icon: SlidersHorizontal },
   { href: "/lojas",          label: "Lojas",         icon: MapPin },
   { href: "/cupons",         label: "Cupons",        icon: Tag },
   { href: "/configuracoes",  label: "Configurações", icon: Settings },
