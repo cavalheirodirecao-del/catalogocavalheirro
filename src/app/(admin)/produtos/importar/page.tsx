@@ -7,7 +7,7 @@ type Grupo = { id: string; nome: string; subGrupos: { id: string; nome: string }
 type Resultado = {
   linhas: number; produtos: number; novos: number; existentes: number;
   erros: string[];
-  amostra: { codigo: string; nome: string; variacoes: number; situacao: "CRIAR" | "ATUALIZAR"; grupoId: string; subGrupoId: string | null; precoVarejo: number; precoAtacado: number }[];
+  amostra: { codigo: string; nome: string; variacoes: number; situacao: "CRIAR" | "ATUALIZAR"; grupoId: string; subGrupoId: string | null; precoVarejo: number; precoAtacado: number; precoGrandesClientes: number }[];
   ok?: boolean; erro?: string;
 };
 
@@ -19,7 +19,7 @@ export default function ImportarProdutosPage() {
   const [resultado, setResultado] = useState<Resultado | null>(null);
   const [carregando, setCarregando] = useState(false);
   const [liberado, setLiberado] = useState(false);
-  const [edicoes, setEdicoes] = useState<Record<string, { grupoId: string; subGrupoId: string; precoVarejo: number; precoAtacado: number }>>({});
+  const [edicoes, setEdicoes] = useState<Record<string, { grupoId: string; subGrupoId: string; precoVarejo: number; precoAtacado: number; precoGrandesClientes: number }>>({});
 
   useEffect(() => {
     fetch("/api/grupos?admin=1").then(r => r.json()).then(setGrupos);
@@ -37,7 +37,7 @@ export default function ImportarProdutosPage() {
     const resposta = await fetch("/api/importacoes/faz-agilizar", { method: "POST", body: dados });
     const json = await resposta.json();
     setResultado(json);
-    if (acao === "validar" && json.amostra) setEdicoes(Object.fromEntries(json.amostra.map((p: Resultado["amostra"][number]) => [p.codigo, { grupoId: p.grupoId, subGrupoId: p.subGrupoId ?? "", precoVarejo: p.precoVarejo, precoAtacado: p.precoAtacado }])));
+    if (acao === "validar" && json.amostra) setEdicoes(Object.fromEntries(json.amostra.map((p: Resultado["amostra"][number]) => [p.codigo, { grupoId: p.grupoId, subGrupoId: p.subGrupoId ?? "", precoVarejo: p.precoVarejo, precoAtacado: p.precoAtacado, precoGrandesClientes: p.precoGrandesClientes }])));
     if (resposta.ok && acao === "liberar") setLiberado(true);
     setCarregando(false);
   }
@@ -89,6 +89,7 @@ export default function ImportarProdutosPage() {
       </div>
 
       {resultado && <div className="space-y-4">
+        {resultado.erros.length === 0 && <div className="border border-amber-200 bg-amber-50 p-3"><p className="text-sm font-semibold text-amber-900">Tabela 5 · Grandes clientes</p><p className="text-xs text-amber-800">O preço sugerido usa 15% de desconto sobre o atacado e pode ser alterado antes da liberação.</p>{resultado.amostra.map(item => { const e = edicoes[item.codigo] ?? { grupoId: item.grupoId, subGrupoId: item.subGrupoId ?? "", precoVarejo: item.precoVarejo, precoAtacado: item.precoAtacado, precoGrandesClientes: item.precoGrandesClientes }; return <label key={item.codigo} className="flex items-center gap-3 py-1"><span className="w-64 truncate text-xs">{item.codigo} · {item.nome}</span><input type="number" step="0.01" value={e.precoGrandesClientes} onChange={ev => setEdicoes(x => ({ ...x, [item.codigo]: { ...e, precoGrandesClientes: Number(ev.target.value) } }))} className="w-28 border rounded px-2 py-1 text-right text-sm" /></label>; })}</div>}
         {liberado && <div className="bg-green-50 border border-green-200 text-green-800 p-4 rounded-lg flex gap-3"><CheckCircle2 size={20} /><div><p className="font-semibold text-sm">Importação concluída</p><p className="text-sm mt-1">{resultado.produtos} produtos e {resultado.linhas} variações foram sincronizados.</p></div></div>}
         <div className="bg-white border border-gray-200 rounded-lg p-5">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">

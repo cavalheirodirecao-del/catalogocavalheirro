@@ -41,7 +41,7 @@ async function POSTHandler(req: NextRequest) {
   const grupoId = String(form.get("grupoId") ?? "");
   const subGrupoId = String(form.get("subGrupoId") ?? "");
   const acao = String(form.get("acao") ?? "validar");
-  let ajustes: Record<string, { grupoId?: string; subGrupoId?: string; precoVarejo?: number; precoAtacado?: number }> = {};
+  let ajustes: Record<string, { grupoId?: string; subGrupoId?: string; precoVarejo?: number; precoAtacado?: number; precoGrandesClientes?: number }> = {};
   try { ajustes = JSON.parse(String(form.get("ajustes") ?? "{}")); } catch { return NextResponse.json({ erro: "Ajustes inválidos." }, { status: 400 }); }
   if (!(arquivo instanceof File)) return NextResponse.json({ erro: "Selecione um arquivo CSV." }, { status: 400 });
   if (arquivo.size > 8 * 1024 * 1024) return NextResponse.json({ erro: "O arquivo deve ter no máximo 8 MB." }, { status: 400 });
@@ -53,7 +53,7 @@ async function POSTHandler(req: NextRequest) {
     novos: plano.plano.filter(p => !p.existente).length,
     existentes: plano.plano.filter(p => p.existente).length,
     erros: plano.erros,
-    amostra: plano.plano.map((p: any) => ({ codigo: p.produto.codigo, nome: p.produto.nome, variacoes: p.produto.variacoes.length, situacao: p.existente ? "ATUALIZAR" : "CRIAR", grupoId: p.existente?.grupoId ?? grupoId, subGrupoId: p.existente?.subGrupoId ?? subGrupoId, precoVarejo: p.existente?.precoVarejoVista ?? (p.produto.origem === "VAREJO" ? p.produto.precoAtacado : 0), precoAtacado: p.existente?.precoAtacadoVista ?? (p.produto.origem === "ATACADO" ? p.produto.precoAtacado : 0) })),
+    amostra: plano.plano.map((p: any) => { const atacado = p.existente?.precoAtacadoVista ?? (p.produto.origem === "ATACADO" ? p.produto.precoAtacado : 0); const calculado = atacado > 0 ? Math.floor(atacado * 0.85) + 0.9 : 0; return { codigo: p.produto.codigo, nome: p.produto.nome, variacoes: p.produto.variacoes.length, situacao: p.existente ? "ATUALIZAR" : "CRIAR", grupoId: p.existente?.grupoId ?? grupoId, subGrupoId: p.existente?.subGrupoId ?? subGrupoId, precoVarejo: p.existente?.precoVarejoVista ?? (p.produto.origem === "VAREJO" ? p.produto.precoAtacado : 0), precoAtacado: atacado, precoGrandesClientes: p.existente?.precoFabricaVista ?? calculado }; }),
   };
   if (acao === "validar") return NextResponse.json(resumo);
   if (acao !== "liberar") return NextResponse.json({ erro: "Ação inválida." }, { status: 400 });
@@ -71,6 +71,7 @@ async function POSTHandler(req: NextRequest) {
       const produtoSubGrupoId = ajuste.subGrupoId || existente?.subGrupoId || subGrupoId || null;
       const precoVarejo = Number.isFinite(ajuste.precoVarejo) ? Number(ajuste.precoVarejo) : (fonte.origem === "VAREJO" ? fonte.precoAtacado : (existente?.precoVarejoVista ?? 0));
       const precoAtacado = Number.isFinite(ajuste.precoAtacado) ? Number(ajuste.precoAtacado) : (fonte.origem === "ATACADO" ? fonte.precoAtacado : (existente?.precoAtacadoVista ?? 0));
+      const precoGrandesClientes = Number.isFinite(ajuste.precoGrandesClientes) ? Number(ajuste.precoGrandesClientes) : (existente?.precoFabricaVista ?? (precoAtacado > 0 ? Math.floor(precoAtacado * 0.85) + 0.9 : 0));
       let gradeAtual = grade;
       if (!gradeAtual) {
         const tamanhos: string[] = Array.from(new Set(fonte.variacoes.map((v: LinhaFazAgilizar) => v.tamanho)));
@@ -87,10 +88,10 @@ async function POSTHandler(req: NextRequest) {
           codigo: fonte.codigo, nome: fonte.nome, grupoId: produtoGrupoId, subGrupoId: produtoSubGrupoId, gradeId: gradeAtual.id,
           precoVarejoVista: precoVarejo, precoVarejoPrazo: precoVarejo,
           precoAtacadoVista: precoAtacado, precoAtacadoPrazo: precoAtacado,
-          precoFabricaVista: 0, precoFabricaPrazo: 0,
+          precoFabricaVista: precoGrandesClientes, precoFabricaPrazo: precoGrandesClientes,
         },
       });
-      if (existente) await tx.produto.update({ where: { id: produto.id }, data: { nome: fonte.nome, grupoId: produtoGrupoId, subGrupoId: produtoSubGrupoId, gradeId: gradeAtual.id, precoVarejoVista: precoVarejo, precoVarejoPrazo: precoVarejo, precoAtacadoVista: precoAtacado, precoAtacadoPrazo: precoAtacado } });
+      if (existente) await tx.produto.update({ where: { id: produto.id }, data: { nome: fonte.nome, grupoId: produtoGrupoId, subGrupoId: produtoSubGrupoId, gradeId: gradeAtual.id, precoVarejoVista: precoVarejo, precoVarejoPrazo: precoVarejo, precoAtacadoVista: precoAtacado, precoAtacadoPrazo: precoAtacado, precoFabricaVista: precoGrandesClientes, precoFabricaPrazo: precoGrandesClientes } });
 
       for (const variacao of fonte.variacoes) {
         const gradeItem = gradeAtual.itens.find((i: { id: string; valor: string }) => i.valor.toUpperCase() === variacao.tamanho);
