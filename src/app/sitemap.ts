@@ -10,7 +10,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     prisma.postBlog.findMany({ where: { publicado: true }, select: { slug: true, atualizadoEm: true } }),
   ]);
   return [
-    { url: SITE_URL },
+    { url: `${SITE_URL}/` },
     ...Object.keys(publicPages).map(path => ({ url: `${SITE_URL}/${path}` })),
     ...products.flatMap(product => ["varejo", "atacado"].map(catalog => ({ url: `${SITE_URL}/${catalog}/produto/${product.id}`, lastModified: product.atualizadoEm }))),
     ...posts.map(post => ({ url: `${SITE_URL}/blog/${encodeURIComponent(post.slug)}`, lastModified: post.atualizadoEm })),
