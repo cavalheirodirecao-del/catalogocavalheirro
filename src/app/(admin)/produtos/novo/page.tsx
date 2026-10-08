@@ -17,6 +17,7 @@ export default function NovoProdutoPage() {
   const [grupos, setGrupos] = useState<Grupo[]>([]);
   const [subGrupos, setSubGrupos] = useState<{ id: string; nome: string }[]>([]);
   const [grades, setGrades] = useState<Grade[]>([]);
+  const [videos, setVideos] = useState([{ cdnUrl: "", titulo: "", canais: ["VAREJO", "ATACADO", "FABRICA"] }]);
   const [form, setForm] = useState({
     codigo: "",
     nome: "",
@@ -117,6 +118,7 @@ export default function NovoProdutoPage() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Erro ao criar produto");
+      for (const video of videos.filter(v => v.cdnUrl.trim()).slice(0, 3)) await fetch(`/api/produtos/${data.id}/videos`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(video) });
       router.push("/produtos");
     } catch (err: any) {
       setErro(err.message);
@@ -130,6 +132,7 @@ export default function NovoProdutoPage() {
       <h1 className="text-2xl font-bold mb-6">Novo Produto</h1>
       <form onSubmit={handleSubmit} className="space-y-6">
         {erro && <p className="text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2">{erro}</p>}
+        <div className="bg-white rounded-xl border border-gray-100 p-6 space-y-3"><h2 className="font-semibold text-gray-700">Vídeos do produto (até 3)</h2>{videos.map((v, i) => <div key={i} className="grid grid-cols-[1fr_180px] gap-2"><input className="border rounded-lg px-3 py-2 text-sm" placeholder="URL Bunny Stream ou YouTube" value={v.cdnUrl} onChange={e => setVideos(x => x.map((a, n) => n === i ? { ...a, cdnUrl: e.target.value } : a))} /><input className="border rounded-lg px-3 py-2 text-sm" placeholder="Título (opcional)" value={v.titulo} onChange={e => setVideos(x => x.map((a, n) => n === i ? { ...a, titulo: e.target.value } : a))} /></div>)}{videos.length < 3 && <button type="button" onClick={() => setVideos(x => [...x, { cdnUrl: "", titulo: "", canais: ["VAREJO", "ATACADO", "FABRICA"] }])} className="text-sm text-blue-600">+ Adicionar vídeo</button>}</div>
 
         <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-6 space-y-4">
           <h2 className="font-semibold text-gray-700">Dados Básicos</h2>

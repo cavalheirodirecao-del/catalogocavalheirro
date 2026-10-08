@@ -23,13 +23,14 @@ export default function EditarProdutoPage() {
   const [subGrupos, setSubGrupos] = useState<SubGrupo[]>([]);
   const [grades, setGrades] = useState<Grade[]>([]);
   const [form, setForm] = useState<any>(null);
+  const [videos, setVideos] = useState<any[]>([]);
 
   useEffect(() => {
     Promise.all([
       fetch(`/api/produtos/${id}`).then(r => r.json()),
       fetch("/api/grupos").then(r => r.json()),
       fetch("/api/grades").then(r => r.json()),
-    ]).then(([produto, grps, gds]) => {
+    ]).then(async ([produto, grps, gds]) => {
       if (!produto?.id || !Array.isArray(produto.cores)) {
         setErro(produto?.erro ?? "Este produto não existe ou foi removido.");
         setForm(null);
@@ -45,6 +46,7 @@ export default function EditarProdutoPage() {
           imagens: c.imagens.map((i: any) => ({ url: i.url, principal: i.principal })),
         })),
       });
+      const videoRes = await fetch(`/api/produtos/${id}/videos`); if (videoRes.ok) setVideos(await videoRes.json());
       setGrupos(grps);
       setGrades(gds);
     }).catch(() => setErro("Não foi possível carregar o produto.")).finally(() => setLoading(false));
@@ -121,6 +123,8 @@ export default function EditarProdutoPage() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Erro ao salvar");
+      const atuais = videos.filter(v => v.cdnUrl?.trim()).slice(0, 3);
+      for (const video of atuais) { if (video.id) await fetch(`/api/produtos/${id}/videos`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ titulo: video.titulo, legenda: video.legenda, ordem: video.ordem, ativo: video.ativo }) }); else await fetch(`/api/produtos/${id}/videos`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(video) }); }
       router.push("/produtos");
     } catch (err: any) {
       setErro(err.message);
@@ -137,6 +141,7 @@ export default function EditarProdutoPage() {
       <h1 className="text-2xl font-bold mb-6">Editar Produto</h1>
       <form onSubmit={handleSubmit} className="space-y-6">
         {erro && <p className="text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2">{erro}</p>}
+        <div className="bg-white rounded-xl border border-gray-100 p-6 space-y-3"><h2 className="font-semibold text-gray-700">Vídeos do produto (até 3)</h2>{videos.map((v, i) => <div key={v.id ?? i} className="grid grid-cols-[1fr_180px] gap-2"><input className="border rounded-lg px-3 py-2 text-sm" placeholder="URL Bunny Stream ou YouTube" value={v.cdnUrl ?? ""} onChange={e => setVideos(x => x.map((a, n) => n === i ? { ...a, cdnUrl: e.target.value } : a))} /><input className="border rounded-lg px-3 py-2 text-sm" placeholder="Título (opcional)" value={v.titulo ?? ""} onChange={e => setVideos(x => x.map((a, n) => n === i ? { ...a, titulo: e.target.value } : a))} /></div>)}{videos.length < 3 && <button type="button" onClick={() => setVideos(x => [...x, { cdnUrl: "", titulo: "", ordem: x.length, canais: ["VAREJO", "ATACADO", "FABRICA"] }])} className="text-sm text-blue-600">+ Adicionar vídeo</button>}</div>
 
         {/* Dados básicos */}
         <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-6 space-y-4">
