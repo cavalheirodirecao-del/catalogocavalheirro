@@ -6,9 +6,10 @@ const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL ?? "https://catalogocavalheirr
 
 export default async function VendedoresPage() {
   const vendedores = await prisma.vendedor.findMany({
-    include: {
-      usuario: true,
-      links: true,
+    select: {
+      id: true, slug: true,
+      usuario: { select: { nome: true, email: true } },
+      links: { select: { catalogo: true, ativo: true } },
       _count: { select: { pedidos: true } },
     },
     orderBy: { usuario: { nome: "asc" } },
