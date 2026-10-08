@@ -9,7 +9,8 @@ import ImageUpload from "@/components/admin/ImageUpload";
 interface GradeItem { id: string; valor: string; ordem: number; }
 interface Grade { id: string; nome: string; itens: GradeItem[]; }
 interface Imagem { url: string; principal: boolean; }
-interface Cor { id?: string; nome: string; hexCor: string; ativo: boolean; imagens: Imagem[]; }
+interface Cor { id?: string; corGlobalId?: string; nome: string; hexCor: string; ativo: boolean; imagens: Imagem[]; }
+interface CorGlobal { id: string; nome: string; hexCor: string | null; }
 interface Grupo { id: string; nome: string; subGrupos: SubGrupo[]; }
 interface SubGrupo { id: string; nome: string; grupoId: string; }
 
@@ -22,6 +23,7 @@ export default function EditarProdutoPage() {
   const [grupos, setGrupos] = useState<Grupo[]>([]);
   const [subGrupos, setSubGrupos] = useState<SubGrupo[]>([]);
   const [grades, setGrades] = useState<Grade[]>([]);
+  const [coresGlobais, setCoresGlobais] = useState<CorGlobal[]>([]);
   const [form, setForm] = useState<any>(null);
   const [videos, setVideos] = useState<any[]>([]);
 
@@ -30,8 +32,9 @@ export default function EditarProdutoPage() {
       fetch(`/api/produtos/${id}`).then(async r => ({ ok: r.ok, data: await r.json() })),
       fetch("/api/grupos").then(async r => ({ ok: r.ok, data: await r.json() })),
       fetch("/api/grades").then(async r => ({ ok: r.ok, data: await r.json() })),
+      fetch("/api/cores").then(async r => ({ ok: r.ok, data: await r.json() })),
       fetch(`/api/produtos/${id}/videos`).then(async r => ({ ok: r.ok, data: await r.json() })).catch(() => ({ ok: false, data: [] })),
-    ]).then(async ([produtoRes, gruposRes, gradesRes, videosRes]) => {
+    ]).then(async ([produtoRes, gruposRes, gradesRes, coresRes, videosRes]) => {
       const produto = produtoRes.data;
       if (!produtoRes.ok || !produto?.id) throw new Error(produto?.erro ?? "Produto não encontrado.");
       const grps = gruposRes.ok && Array.isArray(gruposRes.data) ? gruposRes.data : [];
@@ -45,6 +48,7 @@ export default function EditarProdutoPage() {
         ...produto,
         cores: (Array.isArray(produto.cores) ? produto.cores : []).map((c: any) => ({
           id: c.id,
+          corGlobalId: c.corGlobalId ?? "",
           nome: c.nome,
           hexCor: c.hexCor ?? "",
           ativo: c.ativo,
@@ -52,6 +56,7 @@ export default function EditarProdutoPage() {
         })),
       });
       setVideos(videosRes.ok && Array.isArray(videosRes.data) ? videosRes.data : []);
+      setCoresGlobais(coresRes.ok && Array.isArray(coresRes.data) ? coresRes.data : []);
       const videoRes = await fetch(`/api/produtos/${id}/videos`); if (videoRes.ok) setVideos(await videoRes.json());
       setGrupos(grps);
       setGrades(gds);
@@ -130,7 +135,7 @@ export default function EditarProdutoPage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Erro ao salvar");
       const atuais = videos.filter(v => v.cdnUrl?.trim()).slice(0, 3);
-      for (const video of atuais) { if (video.id) await fetch(`/api/produtos/${id}/videos`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ titulo: video.titulo, legenda: video.legenda, ordem: video.ordem, ativo: video.ativo }) }); else await fetch(`/api/produtos/${id}/videos`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(video) }); }
+      for (const video of atuais) { if (video.id) await fetch(`/api/produtos/${id}/videos/${video.id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ titulo: video.titulo, legenda: video.legenda, ordem: video.ordem, ativo: video.ativo }) }); else await fetch(`/api/produtos/${id}/videos`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(video) }); }
       router.push("/produtos");
     } catch (err: any) {
       setErro(err.message);
@@ -271,8 +276,10 @@ export default function EditarProdutoPage() {
                 <div className="flex-1 grid grid-cols-2 gap-3">
                   <div>
                     <label className="block text-xs text-gray-500 mb-1">Nome da cor</label>
-                    <input type="text" value={cor.nome} onChange={e => setCor(ci, "nome", e.target.value)}
-                      className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black" />
+                    <select required value={cor.corGlobalId ?? ""} onChange={e => { const g = coresGlobais.find(x => x.id === e.target.value); setCor(ci, "corGlobalId", e.target.value); setCor(ci, "nome", g?.nome ?? cor.nome); setCor(ci, "hexCor", g?.hexCor ?? cor.hexCor); }}
+                      className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black">
+                      <option value="">Selecione uma cor global</option>{coresGlobais.map(g => <option key={g.id} value={g.id}>{g.nome}</option>)}
+                    </select>
                   </div>
                   <div>
                     <label className="block text-xs text-gray-500 mb-1">Hex</label>

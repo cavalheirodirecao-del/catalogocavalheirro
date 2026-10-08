@@ -60,6 +60,7 @@ async function POSTHandler(request: NextRequest) {
     const produtoCor = await prisma.produtoCor.create({
       data: {
         produtoId: produto.id,
+        corGlobalId: cor.corGlobalId || null,
         nome: cor.nome,
         hexCor: cor.hexCor || null,
         imagens: {

@@ -68,7 +68,11 @@ export default function EstoquePage() {
     setLoading(false);
   }
 
-  useEffect(() => { carregar().catch(e => { setErro(e instanceof Error ? e.message : "Não foi possível carregar o estoque."); setLoading(false); }); }, []);
+  useEffect(() => {
+    carregar().catch(e => { setErro(e instanceof Error ? e.message : "Não foi possível carregar o estoque."); setLoading(false); });
+    const timer = window.setInterval(() => { carregar().catch(() => undefined); }, 30000);
+    return () => window.clearInterval(timer);
+  }, []);
 
   // Grupos e subgrupos únicos
   const grupos = useMemo(() => {

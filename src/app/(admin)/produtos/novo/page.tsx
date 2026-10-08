@@ -8,7 +8,8 @@ import ImageUpload from "@/components/admin/ImageUpload";
 interface Grade { id: string; nome: string; itens: { id: string; valor: string }[]; }
 interface Grupo { id: string; nome: string; subGrupos: { id: string; nome: string }[]; }
 interface Imagem { url: string; principal: boolean; }
-interface Cor { nome: string; hexCor: string; imagens: Imagem[]; }
+interface Cor { corGlobalId?: string; nome: string; hexCor: string; imagens: Imagem[]; }
+interface CorGlobal { id: string; nome: string; hexCor: string | null; }
 
 export default function NovoProdutoPage() {
   const router = useRouter();
@@ -17,6 +18,7 @@ export default function NovoProdutoPage() {
   const [grupos, setGrupos] = useState<Grupo[]>([]);
   const [subGrupos, setSubGrupos] = useState<{ id: string; nome: string }[]>([]);
   const [grades, setGrades] = useState<Grade[]>([]);
+  const [coresGlobais, setCoresGlobais] = useState<CorGlobal[]>([]);
   const [videos, setVideos] = useState([{ cdnUrl: "", titulo: "", canais: ["VAREJO", "ATACADO", "FABRICA"] }]);
   const [form, setForm] = useState({
     codigo: "",
@@ -44,9 +46,11 @@ export default function NovoProdutoPage() {
     Promise.all([
       fetch("/api/grupos").then(r => r.json()),
       fetch("/api/grades").then(r => r.json()),
-    ]).then(([grps, gds]) => {
+      fetch("/api/cores").then(r => r.json()),
+    ]).then(([grps, gds, cores]) => {
       setGrupos(grps);
       setGrades(gds);
+      setCoresGlobais(Array.isArray(cores) ? cores : []);
     });
   }, []);
 
@@ -249,8 +253,10 @@ export default function NovoProdutoPage() {
                 <div className="flex-1 grid grid-cols-2 gap-3">
                   <div>
                     <label className="block text-xs text-gray-500 mb-1">Nome da cor *</label>
-                    <input type="text" value={cor.nome} onChange={e => setCor(ci, "nome", e.target.value)}
-                      className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black" />
+                    <select required value={cor.corGlobalId ?? ""} onChange={e => { const g = coresGlobais.find(x => x.id === e.target.value); setCor(ci, "corGlobalId", e.target.value); setCor(ci, "nome", g?.nome ?? ""); setCor(ci, "hexCor", g?.hexCor ?? "#000000"); }}
+                      className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black">
+                      <option value="">Selecione uma cor global</option>{coresGlobais.map(g => <option key={g.id} value={g.id}>{g.nome}</option>)}
+                    </select>
                   </div>
                   <div>
                     <label className="block text-xs text-gray-500 mb-1">Cor</label>

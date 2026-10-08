@@ -37,6 +37,15 @@ async function PUTHandler(request: NextRequest, { params }: { params: { id: stri
     ativo, cores, novidade, oferta,
   } = body;
 
+  const produtoAtual = await prisma.produto.findUnique({
+    where: { id: params.id },
+    select: { gradeId: true, variantes: { select: { id: true } } },
+  });
+  if (!produtoAtual) return NextResponse.json({ error: "Produto não encontrado." }, { status: 404 });
+  if (gradeId && produtoAtual.gradeId && gradeId !== produtoAtual.gradeId && produtoAtual.variantes.length) {
+    return NextResponse.json({ error: "A grade não pode ser trocada enquanto o produto possui variantes. Crie outro produto para outra grade." }, { status: 409 });
+  }
+
   // Atualiza dados base do produto
   await prisma.produto.update({
     where: { id: params.id },
@@ -67,9 +76,12 @@ async function PUTHandler(request: NextRequest, { params }: { params: { id: stri
   const coresExistentesIds = cores.filter((c: any) => c.id).map((c: any) => c.id);
 
   // Remove cores que foram deletadas
-  const coresAnteriores = await prisma.produtoCor.findMany({ where: { produtoId: params.id } });
+  const coresAnteriores = await prisma.produtoCor.findMany({ where: { produtoId: params.id }, select: { id: true } });
   for (const corAntiga of coresAnteriores) {
     if (!coresExistentesIds.includes(corAntiga.id)) {
+      const uso = await prisma.movimentacaoEstoque.count({ where: { variante: { corId: corAntiga.id } } });
+      const pedidos = await prisma.itemPedido.count({ where: { variante: { corId: corAntiga.id } } });
+      if (uso || pedidos) return NextResponse.json({ error: "Não é possível excluir uma cor com histórico. Desative-a mantendo o histórico." }, { status: 409 });
       await prisma.imagemProduto.deleteMany({ where: { corId: corAntiga.id } });
       await prisma.estoque.deleteMany({ where: { variante: { corId: corAntiga.id } } });
       await prisma.produtoVariante.deleteMany({ where: { corId: corAntiga.id } });
@@ -83,7 +95,7 @@ async function PUTHandler(request: NextRequest, { params }: { params: { id: stri
       // Atualiza cor existente
       await prisma.produtoCor.update({
         where: { id: cor.id },
-        data: { nome: cor.nome, hexCor: cor.hexCor || null, ativo: cor.ativo ?? true },
+        data: { nome: cor.nome, hexCor: cor.hexCor || null, corGlobalId: cor.corGlobalId || null, ativo: cor.ativo ?? true },
       });
       // Atualiza imagens
       await prisma.imagemProduto.deleteMany({ where: { corId: cor.id } });
@@ -102,6 +114,7 @@ async function PUTHandler(request: NextRequest, { params }: { params: { id: stri
           produtoId: params.id,
           nome: cor.nome,
           hexCor: cor.hexCor || null,
+          corGlobalId: cor.corGlobalId || null,
           imagens: {
             create: cor.imagens.map((img: any, idx: number) => ({
               url: img.url,
