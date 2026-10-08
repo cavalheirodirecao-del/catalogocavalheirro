@@ -487,12 +487,23 @@ model ProdutoCor {
   id        String  @id @default(cuid())
   produtoId String
   produto   Produto @relation(fields: [produtoId], references: [id])
+  corGlobalId String?
+  corGlobal CorGlobal? @relation(fields: [corGlobalId], references: [id])
   nome      String
   hexCor    String?
   ativo     Boolean @default(true)
 
   imagens   ImagemProduto[]
   variantes ProdutoVariante[]
+}
+
+model CorGlobal {
+  id        String       @id @default(cuid())
+  nome      String       @unique
+  hexCor    String?
+  ativo     Boolean      @default(true)
+  criadoEm  DateTime     @default(now())
+  produtos  ProdutoCor[]
 }
 
 model ImagemProduto {

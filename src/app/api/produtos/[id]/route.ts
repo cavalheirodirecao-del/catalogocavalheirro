@@ -62,7 +62,6 @@ async function PUTHandler(request: NextRequest, { params }: { params: { id: stri
   if (!gradeId) await prisma.produto.update({ where: { id: params.id }, data: { gradeId: gradeAtualId } });
   // Busca itens da grade para novas cores
   const gradeItens = await prisma.gradeItem.findMany({ where: { gradeId: gradeAtualId } });
-    : [];
 
   // IDs de cores existentes que ainda estão no form
   const coresExistentesIds = cores.filter((c: any) => c.id).map((c: any) => c.id);
