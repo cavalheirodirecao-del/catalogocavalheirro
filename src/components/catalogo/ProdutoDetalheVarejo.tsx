@@ -8,6 +8,7 @@ import ProdutosSimilares from "./ProdutosSimilares";
 import Lightbox from "./Lightbox";
 import { formatarMoeda } from "@/lib/utils";
 import Link from "next/link";
+import { videoUrls, youtubeId, videoEmbedUrl } from "@/lib/video-utils";
 
 interface GradeItem { id: string; valor: string; ordem: number; }
 interface Variante { id: string; gradeItem: GradeItem; estoque: { quantidade: number; pendente: number } | null; }
@@ -37,11 +38,6 @@ interface Props {
 
 const IMG_PADRAO = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0 400 400'%3E%3Crect width='400' height='400' fill='%23f3f4f6'/%3E%3Ctext x='50%25' y='50%25' font-family='sans-serif' font-size='14' fill='%239ca3af' text-anchor='middle' dy='.3em'%3ESem foto%3C/text%3E%3C/svg%3E";
 
-function getYouTubeId(url: string): string | null {
-  const match = url.match(/(?:youtu\.be\/|youtube\.com\/(?:shorts\/|embed\/|watch\?v=))([a-zA-Z0-9_-]{11})/);
-  return match?.[1] ?? null;
-}
-function getVideoUrls(value: string | null) { return (value ?? "").split("\n").map(v => v.trim()).filter(Boolean); }
 
 // ─── Carrinho ────────────────────────────────────────────
 function CarrinhoDrawer({ precos }: { precos: Record<string, number> }) {
@@ -101,7 +97,7 @@ function CarrinhoDrawer({ precos }: { precos: Record<string, number> }) {
 // ─── Inner ────────────────────────────────────────────────
 function VarejoDetalheInner({ produto, similares }: Omit<Props, "vendedorSlug" | "catalogo">) {
   const { adicionar, totalItens, itens } = useCart();
-  const videos = getVideoUrls(produto.videoUrl); const youtubeId = videos[0] ? getYouTubeId(videos[0]) : null; const videoUrl = videos[0];
+  const videos = videoUrls(produto.videoUrl); const videoUrl = videos[0];
 
   type Tab = "foto" | "video";
   const [tab, setTab] = useState<Tab>("foto");
@@ -203,7 +199,7 @@ function VarejoDetalheInner({ produto, similares }: Omit<Props, "vendedorSlug" |
           <div className="flex-1 rounded-xl overflow-hidden bg-gray-100 relative">
             {tab === "video" && videoUrl ? (
               <div className="w-full" style={{ aspectRatio: "9/16" }}>
-                <iframe src={youtubeId ? `https://www.youtube.com/embed/${youtubeId}?autoplay=1&controls=1` : videoUrl} className="w-full h-full" allow="autoplay; fullscreen; picture-in-picture" allowFullScreen />
+                <iframe src={videoEmbedUrl(videoUrl)} loading="lazy" className="w-full h-full" allow="autoplay; fullscreen; picture-in-picture" allowFullScreen />
               </div>
             ) : (
               <div className="aspect-[3/4] relative group cursor-zoom-in" onClick={() => setLightboxOpen(true)}>
