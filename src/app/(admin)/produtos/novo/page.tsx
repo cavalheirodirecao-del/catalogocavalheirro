@@ -158,6 +158,7 @@ export default function NovoProdutoPage() {
               placeholder={"Composição: 97% Algodão 3% Elastano\nGramatura: 220g/m²\nEncolhimento aproximado: 2%\n\nObs: Modelo veste tamanho G, altura 1,80m, peso 81kg"}
               className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black font-mono" />
           </div>
+          <div className="grid gap-2"><label className="block text-sm font-medium text-gray-700">Vídeos do produto (até 3)</label>{[0,1,2].map(i => <input key={i} type="url" placeholder={`URL do vídeo ${i + 1} (YouTube ou Bunny)`} value={(form.videoUrl ?? "").split("\n")[i] ?? ""} onChange={e => { const v = (form.videoUrl ?? "").split("\n"); v[i] = e.target.value; setField("videoUrl", v.join("\n")); }} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" />)}</div>
           <div className="grid grid-cols-2 gap-4">
             <ImageUpload label="Foto Principal" aspect="square"
               value={form.imagemPrincipal} onChange={v => setField("imagemPrincipal", v)} />

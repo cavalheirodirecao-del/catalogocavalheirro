@@ -41,6 +41,7 @@ function getYouTubeId(url: string): string | null {
   const match = url.match(/(?:youtu\.be\/|youtube\.com\/(?:shorts\/|embed\/|watch\?v=))([a-zA-Z0-9_-]{11})/);
   return match?.[1] ?? null;
 }
+function getVideoUrls(value: string | null) { return (value ?? "").split("\n").map(v => v.trim()).filter(Boolean); }
 
 // ─── Carrinho ────────────────────────────────────────────
 function CarrinhoDrawer({ precos }: { precos: Record<string, number> }) {
@@ -100,7 +101,7 @@ function CarrinhoDrawer({ precos }: { precos: Record<string, number> }) {
 // ─── Inner ────────────────────────────────────────────────
 function VarejoDetalheInner({ produto, similares }: Omit<Props, "vendedorSlug" | "catalogo">) {
   const { adicionar, totalItens, itens } = useCart();
-  const youtubeId = produto.videoUrl ? getYouTubeId(produto.videoUrl) : null;
+  const videos = getVideoUrls(produto.videoUrl); const youtubeId = videos[0] ? getYouTubeId(videos[0]) : null; const videoUrl = videos[0];
 
   type Tab = "foto" | "video";
   const [tab, setTab] = useState<Tab>("foto");
@@ -190,7 +191,7 @@ function VarejoDetalheInner({ produto, similares }: Omit<Props, "vendedorSlug" |
                 <img loading="lazy" decoding="async" src={img.url} alt={`${produto.nome} — imagem ${i + 1}`} className="w-full h-full object-cover" />
               </button>
             ))}
-            {youtubeId && (
+            {videoUrl && (
               <button onClick={() => setTab("video")}
                 className={`w-16 h-16 rounded-lg overflow-hidden border-2 flex items-center justify-center bg-gray-900 transition ${tab === "video" ? "border-black" : "border-transparent hover:border-gray-300"}`}>
                 <Play size={20} className="text-white" fill="white" />
@@ -200,10 +201,9 @@ function VarejoDetalheInner({ produto, similares }: Omit<Props, "vendedorSlug" |
 
           {/* Imagem principal / Vídeo */}
           <div className="flex-1 rounded-xl overflow-hidden bg-gray-100 relative">
-            {tab === "video" && youtubeId ? (
+            {tab === "video" && videoUrl ? (
               <div className="w-full" style={{ aspectRatio: "9/16" }}>
-                <iframe src={`https://www.youtube.com/embed/${youtubeId}?autoplay=1&controls=1`}
-                  className="w-full h-full" allow="autoplay" allowFullScreen />
+                <iframe src={youtubeId ? `https://www.youtube.com/embed/${youtubeId}?autoplay=1&controls=1` : videoUrl} className="w-full h-full" allow="autoplay; fullscreen; picture-in-picture" allowFullScreen />
               </div>
             ) : (
               <div className="aspect-[3/4] relative group cursor-zoom-in" onClick={() => setLightboxOpen(true)}>
