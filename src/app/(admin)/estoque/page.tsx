@@ -15,7 +15,7 @@ interface Variante {
     subGrupo: { id: string; nome: string } | null;
   };
   cor: { nome: string };
-  gradeItem: { valor: string; ordem: number };
+  gradeItem: { valor: string; ordem: number } | null;
   estoque: { quantidade: number; pendente: number } | null;
 }
 
@@ -57,7 +57,7 @@ export default function EstoquePage() {
               subGrupo: p.subGrupo ?? null,
             },
             cor: { nome: cor.nome },
-            gradeItem: v.gradeItem,
+            gradeItem: v.gradeItem ?? null,
             estoque: v.estoque,
           });
         }
@@ -261,7 +261,7 @@ export default function EstoquePage() {
                       {v.produto.subGrupo?.nome ?? "—"}
                     </td>
                     <td className="px-4 py-3 text-gray-600 whitespace-nowrap">{v.cor.nome}</td>
-                    <td className="px-4 py-3 text-gray-600 whitespace-nowrap">{v.gradeItem.valor}</td>
+                        <td className="px-4 py-3 text-gray-600 whitespace-nowrap">{v.gradeItem?.valor ?? "Sem tamanho"}</td>
                     <td className="px-4 py-3 text-center font-bold text-base">{qtd}</td>
                     <td className="px-4 py-3 text-center text-orange-600 font-medium">
                       {pendente > 0 ? pendente : <span className="text-gray-300">—</span>}
@@ -272,7 +272,7 @@ export default function EstoquePage() {
                     </td>
                     <td className="px-4 py-3 text-right">
                       <button
-                        onClick={() => setModal({ varianteId: v.id, nome: `${v.produto.nome} — ${v.cor.nome} ${v.gradeItem.valor}` })}
+                        onClick={() => setModal({ varianteId: v.id, nome: `${v.produto.nome} — ${v.cor.nome} ${v.gradeItem?.valor ?? "Sem tamanho"}` })}
                         className="text-gray-400 hover:text-black transition"
                         title="Ajustar estoque"
                       >
