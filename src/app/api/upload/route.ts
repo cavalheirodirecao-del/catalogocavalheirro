@@ -7,12 +7,14 @@ const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
 const ALLOWED_EXTS = ["jpg", "jpeg", "png", "webp", "gif"];
 const MAX_SIZE = 5 * 1024 * 1024; // 5 MB
 
-const supabase = createClient(
-  process.env.SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
-
 async function POSTHandler(request: NextRequest) {
+  const supabaseUrl = process.env.SUPABASE_URL;
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!supabaseUrl || !serviceRoleKey) {
+    return NextResponse.json({ erro: "Upload não configurado no servidor." }, { status: 503 });
+  }
+  const supabase = createClient(supabaseUrl, serviceRoleKey);
+
   const token = await getToken({ req: request, secret: process.env.NEXTAUTH_SECRET });
   if (!token) return NextResponse.json({ erro: "Não autorizado" }, { status: 401 });
 
