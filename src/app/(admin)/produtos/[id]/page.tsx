@@ -276,9 +276,9 @@ export default function EditarProdutoPage() {
                 <div className="flex-1 grid grid-cols-2 gap-3">
                   <div>
                     <label className="block text-xs text-gray-500 mb-1">Nome da cor</label>
-                    <select required value={cor.corGlobalId ?? ""} onChange={e => { const g = coresGlobais.find(x => x.id === e.target.value); setCor(ci, "corGlobalId", e.target.value); setCor(ci, "nome", g?.nome ?? cor.nome); setCor(ci, "hexCor", g?.hexCor ?? cor.hexCor); }}
+                    <select value={cor.corGlobalId ?? ""} onChange={e => { const g = coresGlobais.find(x => x.id === e.target.value); setCor(ci, "corGlobalId", e.target.value); setCor(ci, "nome", g?.nome ?? cor.nome); setCor(ci, "hexCor", g?.hexCor ?? cor.hexCor); }}
                       className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black">
-                      <option value="">Selecione uma cor global</option>{coresGlobais.map(g => <option key={g.id} value={g.id}>{g.nome}</option>)}
+                      <option value="">{cor.corGlobalId ? "Selecione uma cor global" : `Cor legada: ${cor.nome}`}</option>{coresGlobais.map(g => <option key={g.id} value={g.id}>{g.nome}</option>)}
                     </select>
                   </div>
                   <div>
