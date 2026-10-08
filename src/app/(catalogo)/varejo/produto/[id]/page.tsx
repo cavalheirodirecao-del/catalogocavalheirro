@@ -22,6 +22,7 @@ export default async function VarejoProdutoPage({ params, searchParams }: Props)
   const produto = await prisma.produto.findUnique({
     where: { id: params.id, ativo: true },
     include: {
+      videos: { where: { ativo: true }, orderBy: { ordem: "asc" } },
       cores: {
         where: { ativo: true },
         include: {
@@ -74,7 +75,7 @@ export default async function VarejoProdutoPage({ params, searchParams }: Props)
         descricao: produto.descricao,
         descricaoCompleta: (produto as any).descricaoCompleta ?? null,
         imagemPrincipal: (produto as any).imagemPrincipal ?? null,
-        videoUrl: produto.videoUrl,
+        videoUrl: [produto.videoUrl, ...produto.videos.map(v => v.cdnUrl)].filter(Boolean).join("\n") || null,
         tabelaMedidas: (produto as any).tabelaMedidas ?? null,
         precoVista: getPreco(produto as any, "VAREJO", "VISTA"),
         precoPrazo: getPreco(produto as any, "VAREJO", "PRAZO"),
