@@ -27,11 +27,15 @@ export default function EditarProdutoPage() {
 
   useEffect(() => {
     Promise.all([
-      fetch(`/api/produtos/${id}`).then(r => r.json()),
-      fetch("/api/grupos").then(r => r.json()),
-      fetch("/api/grades").then(r => r.json()),
-    ]).then(async ([produto, grps, gds]) => {
-      if (!Array.isArray(grps) || !Array.isArray(gds)) throw new Error(grps?.erro ?? gds?.erro ?? produto?.erro ?? "Erro ao carregar dados auxiliares.");
+      fetch(`/api/produtos/${id}`).then(async r => ({ ok: r.ok, data: await r.json() })),
+      fetch("/api/grupos").then(async r => ({ ok: r.ok, data: await r.json() })),
+      fetch("/api/grades").then(async r => ({ ok: r.ok, data: await r.json() })),
+      fetch(`/api/produtos/${id}/videos`).then(async r => ({ ok: r.ok, data: await r.json() })).catch(() => ({ ok: false, data: [] })),
+    ]).then(async ([produtoRes, gruposRes, gradesRes, videosRes]) => {
+      const produto = produtoRes.data;
+      if (!produtoRes.ok || !produto?.id) throw new Error(produto?.erro ?? "Produto não encontrado.");
+      const grps = gruposRes.ok && Array.isArray(gruposRes.data) ? gruposRes.data : [];
+      const gds = gradesRes.ok && Array.isArray(gradesRes.data) ? gradesRes.data : [];
       if (!produto?.id || !Array.isArray(produto.cores)) {
         setErro(produto?.erro ?? "Este produto não existe ou foi removido.");
         setForm(null);
@@ -39,14 +43,15 @@ export default function EditarProdutoPage() {
       }
       setForm({
         ...produto,
-        cores: produto.cores.map((c: any) => ({
+        cores: (Array.isArray(produto.cores) ? produto.cores : []).map((c: any) => ({
           id: c.id,
           nome: c.nome,
           hexCor: c.hexCor ?? "",
           ativo: c.ativo,
-          imagens: c.imagens.map((i: any) => ({ url: i.url, principal: i.principal })),
+          imagens: (Array.isArray(c.imagens) ? c.imagens : []).map((i: any) => ({ url: i.url, principal: i.principal })),
         })),
       });
+      setVideos(videosRes.ok && Array.isArray(videosRes.data) ? videosRes.data : []);
       const videoRes = await fetch(`/api/produtos/${id}/videos`); if (videoRes.ok) setVideos(await videoRes.json());
       setGrupos(grps);
       setGrades(gds);
