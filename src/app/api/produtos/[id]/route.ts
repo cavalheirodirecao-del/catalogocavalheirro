@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
 async function GETHandler(_: NextRequest, { params }: { params: { id: string } }) {
+  try {
   const produto = await prisma.produto.findUnique({
     where: { id: params.id },
     include: {
@@ -19,6 +20,9 @@ async function GETHandler(_: NextRequest, { params }: { params: { id: string } }
   });
   if (!produto) return NextResponse.json({ erro: "Não encontrado." }, { status: 404 });
   return NextResponse.json(produto);
+  } catch (err: any) {
+    return NextResponse.json({ erro: err?.message ?? "Erro ao carregar produto." }, { status: 500 });
+  }
 }
 
 async function PUTHandler(request: NextRequest, { params }: { params: { id: string } }) {

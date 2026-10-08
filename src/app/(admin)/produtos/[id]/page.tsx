@@ -31,6 +31,7 @@ export default function EditarProdutoPage() {
       fetch("/api/grupos").then(r => r.json()),
       fetch("/api/grades").then(r => r.json()),
     ]).then(async ([produto, grps, gds]) => {
+      if (!Array.isArray(grps) || !Array.isArray(gds)) throw new Error(grps?.erro ?? gds?.erro ?? produto?.erro ?? "Erro ao carregar dados auxiliares.");
       if (!produto?.id || !Array.isArray(produto.cores)) {
         setErro(produto?.erro ?? "Este produto não existe ou foi removido.");
         setForm(null);
@@ -49,7 +50,7 @@ export default function EditarProdutoPage() {
       const videoRes = await fetch(`/api/produtos/${id}/videos`); if (videoRes.ok) setVideos(await videoRes.json());
       setGrupos(grps);
       setGrades(gds);
-    }).catch(() => setErro("Não foi possível carregar o produto.")).finally(() => setLoading(false));
+    }).catch((e) => setErro(e instanceof Error ? e.message : "Não foi possível carregar o produto.")).finally(() => setLoading(false));
   }, [id]);
 
   useEffect(() => {
