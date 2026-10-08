@@ -11,6 +11,7 @@ import { TipoCatalogo } from "@prisma/client";
 import RegistroWall from "./RegistroWall";
 import StickyLeadBar from "./StickyLeadBar";
 import MiniGrade from "./MiniGrade";
+import { videoEmbedUrl } from "@/lib/video-utils";
 
 interface Produto {
   id: string;
@@ -366,6 +367,12 @@ function BannerSlider({ banners }: { banners: Props["banners"] }) {
   );
 
   return banner.linkUrl ? <a href={banner.linkUrl} target="_blank" rel="noopener noreferrer">{content}</a> : content;
+}
+
+function VideosColecao({ produtos, catalogo, pathCatalogo }: { produtos: Produto[]; catalogo: TipoCatalogo; pathCatalogo: string }) {
+  const itens = produtos.flatMap(p => (p.videoUrl ?? "").split("\n").map(v => v.trim()).filter(Boolean).slice(0, 1).map(url => ({ p, url })));
+  if (!itens.length) return null;
+  return <section className="mb-8" aria-label={`Vídeos da coleção ${catalogo.toLowerCase()}`}><div className="flex items-center justify-between mb-3"><h2 className="text-lg font-semibold">Vídeos da coleção</h2><Link href={`/reels?catalogo=${catalogo}`} className="text-sm underline">Ver todos</Link></div><div className="flex gap-3 overflow-x-auto snap-x pb-2">{itens.slice(0, 8).map(({ p, url }) => <Link key={p.id} href={`/${pathCatalogo}/produto/${p.id}`} className="relative shrink-0 w-40 sm:w-48 aspect-[9/14] overflow-hidden rounded-xl bg-black snap-start"><iframe src={`${videoEmbedUrl(url)}${videoEmbedUrl(url).includes("?") ? "&" : "?"}muted=1`} title={p.nome} loading="lazy" className="absolute inset-0 h-full w-full pointer-events-none" allow="autoplay; fullscreen" /><span className="absolute bottom-0 inset-x-0 bg-black/60 text-white p-2 text-xs font-medium">{p.nome}</span></Link>)}</div></section>;
 }
 
 // ─── Banner de categoria ──────────────────────────────────
@@ -846,6 +853,7 @@ function CatalogoInner({ produtos, catalogo, banners, config, vendedorNome, qtdM
 
       <main className="max-w-7xl mx-auto px-4 py-6">
         {catalogo === "VAREJO" && <p className="text-sm mb-5">Conheça nossa coleção de moda masculina. <Link href="/sobre" className="underline">Nossa história</Link> · <Link href="/contato" className="underline">Fale com a Cavalheiro</Link> · <Link href="/atacado" className="underline">Compras no atacado</Link></p>}
+        <VideosColecao produtos={produtos} catalogo={catalogo} pathCatalogo={pathCatalogo} />
         <div className="flex items-center justify-between mb-4">
           <p className={`text-sm ${tema.countText}`}>
             {getFiltroLabel() ? (
