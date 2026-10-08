@@ -44,6 +44,17 @@ export default function CategoriasPage() {
   const [editandoSubGrupoNome, setEditandoSubGrupoNome] = useState("");
 
   const [erro, setErro] = useState("");
+  const [importandoCategorias, setImportandoCategorias] = useState(false);
+
+  async function cadastrarFazAgilizar() {
+    if (!confirm("Cadastrar as categorias e subcategorias padrão do Faz Agilizar? As existentes serão preservadas.")) return;
+    setImportandoCategorias(true); setErro("");
+    const res = await fetch("/api/grupos/seed-faz-agilizar", { method: "POST" });
+    const data = await res.json();
+    if (!res.ok) setErro(data.erro ?? "Não foi possível cadastrar as categorias.");
+    else await carregar();
+    setImportandoCategorias(false);
+  }
 
   async function carregar() {
     const data = await fetch("/api/grupos?admin=1").then(r => r.json());
@@ -192,6 +203,7 @@ export default function CategoriasPage() {
       <div className="mb-6">
         <h1 className="text-2xl font-bold">Categorias</h1>
         <p className="text-gray-500 text-sm mt-1">Gerencie grupos e subcategorias de produtos</p>
+        <button onClick={cadastrarFazAgilizar} disabled={importandoCategorias} className="mt-3 bg-black text-white px-3 py-2 rounded-lg text-sm disabled:opacity-50">{importandoCategorias ? "Cadastrando..." : "Cadastrar categorias Faz Agilizar"}</button>
       </div>
 
       {erro && (
