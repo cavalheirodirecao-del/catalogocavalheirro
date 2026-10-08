@@ -414,6 +414,26 @@ model GradeItem {
   variantes ProdutoVariante[]
 }
 
+model VideoProduto {
+  id               String   @id @default(cuid())
+  produtoId        String
+  produto          Produto  @relation(fields: [produtoId], references: [id], onDelete: Cascade)
+  bunnyVideoId     String?
+  bunnyLibraryId   String?
+  cdnUrl           String
+  thumbnailUrl     String?
+  titulo           String?
+  legenda          String?
+  ordem            Int      @default(0)
+  ativo            Boolean  @default(true)
+  canais           Json
+  statusProcessamento String @default("PRONTO")
+  criadoEm         DateTime @default(now())
+  atualizadoEm     DateTime @updatedAt
+
+  @@index([produtoId, ativo, ordem])
+}
+
 // ─────────────────────────────────────────
 // PRODUTOS
 // Um cadastro único com 6 preços e grade associada
@@ -456,6 +476,7 @@ model Produto {
 
   cores     ProdutoCor[]
   variantes ProdutoVariante[]
+  videos    VideoProduto[]
 }
 
 // ─────────────────────────────────────────
