@@ -58,9 +58,10 @@ async function PUTHandler(request: NextRequest, { params }: { params: { id: stri
     },
   });
 
+  const gradeAtualId = gradeId || (await prisma.grade.upsert({ where: { nome: "UNICO" }, update: {}, create: { nome: "UNICO", tipo: "LETRA", itens: { create: [{ valor: "UNICO", ordem: 0 }] } } })).id;
+  if (!gradeId) await prisma.produto.update({ where: { id: params.id }, data: { gradeId: gradeAtualId } });
   // Busca itens da grade para novas cores
-  const gradeItens = gradeId
-    ? await prisma.gradeItem.findMany({ where: { gradeId } })
+  const gradeItens = await prisma.gradeItem.findMany({ where: { gradeId: gradeAtualId } });
     : [];
 
   // IDs de cores existentes que ainda estão no form
@@ -78,7 +79,7 @@ async function PUTHandler(request: NextRequest, { params }: { params: { id: stri
   }
 
   // Atualiza ou cria cada cor
-  for (const cor of cores) {
+  for (const cor of (cores?.length ? cores : [{ nome: "VARIADA", hexCor: null, imagens: [] }])) {
     if (cor.id) {
       // Atualiza cor existente
       await prisma.produtoCor.update({

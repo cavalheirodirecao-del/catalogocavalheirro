@@ -27,8 +27,13 @@ async function POSTHandler(request: NextRequest) {
   } = body;
 
   // Busca os itens da grade para criar variantes automaticamente
-  const gradeItens = gradeId
-    ? await prisma.gradeItem.findMany({ where: { gradeId } })
+  let gradeAtualId = gradeId || null;
+  if (!gradeAtualId) {
+    const gradeUnica = await prisma.grade.upsert({ where: { nome: "UNICO" }, update: {}, create: { nome: "UNICO", tipo: "LETRA", itens: { create: [{ valor: "UNICO", ordem: 0 }] } }, include: { itens: true } });
+    gradeAtualId = gradeUnica.id;
+  }
+  const gradeItens = gradeAtualId
+    ? await prisma.gradeItem.findMany({ where: { gradeId: gradeAtualId } })
     : [];
 
   const produto = await prisma.produto.create({
@@ -40,7 +45,7 @@ async function POSTHandler(request: NextRequest) {
       tabelaMedidas: tabelaMedidas || null,
       grupoId: grupoId || null,
       subGrupoId: subGrupoId || null,
-      gradeId: gradeId || null,
+      gradeId: gradeAtualId,
       precoVarejoVista, precoVarejoPrazo,
       precoAtacadoVista, precoAtacadoPrazo,
       precoFabricaVista, precoFabricaPrazo,
@@ -50,7 +55,8 @@ async function POSTHandler(request: NextRequest) {
   });
 
   // Cria cores + imagens + variantes para cada gradeItem
-  for (const cor of cores) {
+  const coresCadastro = cores?.length ? cores : [{ nome: "VARIADA", hexCor: null, imagens: [] }];
+  for (const cor of coresCadastro) {
     const produtoCor = await prisma.produtoCor.create({
       data: {
         produtoId: produto.id,
