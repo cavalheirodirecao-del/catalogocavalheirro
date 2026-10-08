@@ -5,6 +5,14 @@ import { prisma } from "@/lib/prisma";
 
 const PERFIS_ESTOQUE = ["ADMIN", "GERENTE", "ESTOQUISTA"];
 
+async function GETHandler() {
+  const produtos = await prisma.produto.findMany({
+    where: { ativo: true },
+    select: { id: true, codigo: true, nome: true, descricao: true, grupo: { select: { id: true, nome: true } }, subGrupo: { select: { id: true, nome: true } }, cores: { select: { nome: true, variantes: { select: { id: true, sku: true, gradeItem: { select: { valor: true, ordem: true } }, estoque: { select: { quantidade: true, pendente: true } } } } } } },
+  });
+  return NextResponse.json(produtos);
+}
+
 async function POSTHandler(req: NextRequest) {
   try {
     const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
@@ -45,3 +53,4 @@ async function POSTHandler(req: NextRequest) {
 }
 
 export const POST = withApiAccess(POSTHandler);
+export const GET = withApiAccess(GETHandler);

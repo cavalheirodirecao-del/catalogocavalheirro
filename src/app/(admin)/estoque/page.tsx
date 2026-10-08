@@ -29,6 +29,7 @@ export default function EstoquePage() {
   const [modal, setModal] = useState<{ varianteId: string; nome: string } | null>(null);
   const [ajuste, setAjuste] = useState({ tipo: "ENTRADA", quantidade: 1, obs: "" });
   const [saving, setSaving] = useState(false);
+  const [erro, setErro] = useState("");
 
   // Filtros
   const [busca, setBusca] = useState("");
@@ -37,8 +38,9 @@ export default function EstoquePage() {
   const [filtroSituacao, setFiltroSituacao] = useState("");
 
   async function carregar() {
-    const res = await fetch("/api/produtos");
+    const res = await fetch("/api/estoque");
     const produtos = await res.json();
+    if (!res.ok || !Array.isArray(produtos)) throw new Error(produtos?.error ?? "Não foi possível carregar o estoque.");
     const vars: Variante[] = [];
     for (const p of produtos) {
       for (const cor of p.cores) {
@@ -66,7 +68,7 @@ export default function EstoquePage() {
     setLoading(false);
   }
 
-  useEffect(() => { carregar(); }, []);
+  useEffect(() => { carregar().catch(e => { setErro(e instanceof Error ? e.message : "Não foi possível carregar o estoque."); setLoading(false); }); }, []);
 
   // Grupos e subgrupos únicos
   const grupos = useMemo(() => {
@@ -139,6 +141,7 @@ export default function EstoquePage() {
   const selectCls = "border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black bg-white";
 
   if (loading) return <div className="text-gray-400 p-8">Carregando...</div>;
+  if (erro) return <div className="p-8"><p className="text-red-600">{erro}</p><button onClick={() => { setErro(""); setLoading(true); carregar().catch(e => { setErro(e instanceof Error ? e.message : "Erro"); setLoading(false); }); }} className="mt-3 rounded-lg bg-black px-4 py-2 text-sm text-white">Tentar novamente</button></div>;
 
   return (
     <div className="space-y-5">
