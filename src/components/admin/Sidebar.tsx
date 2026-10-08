@@ -40,17 +40,23 @@ const menusSistema = [
 ];
 
 const menusGerais = [
-  { href: "/grandes-clientes", label: "Grandes clientes", icon: KeyRound },
-  { href: "/dashboard",   label: "Dashboard",    icon: LayoutDashboard },
   { href: "/pedidos",     label: "Pedidos",      icon: ShoppingCart },
-  { href: "/clientes",    label: "Clientes",     icon: Users },
-  { href: "/vendedores",  label: "Vendedores",   icon: UserSquare },
-  { href: "/leads",       label: "Leads",        icon: UserCheck },
   { href: "/banners",     label: "Banners",      icon: Image },
   { href: "/catalogos",   label: "Catálogos PDF", icon: BookOpen },
   { href: "/posts",       label: "Blog",         icon: Newspaper },
   { href: "/relatorios",  label: "Relatórios",   icon: BarChart2 },
   { href: "/alcance",     label: "Alcance",      icon: Signal    },
+];
+const menusPessoas = [
+  { href: "/leads", label: "Leads", icon: UserCheck },
+  { href: "/clientes", label: "Clientes", icon: Users },
+  { href: "/grandes-clientes", label: "Grandes clientes", icon: KeyRound },
+  { href: "/vendedores", label: "Vendedores", icon: UserSquare },
+];
+const menusDashboard = [
+  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/relatorios", label: "Relatórios", icon: BarChart2 },
+  { href: "/alcance", label: "Alcance", icon: Signal },
 ];
 
 const subItensProdutos = [
@@ -128,8 +134,11 @@ export default function Sidebar() {
 
         {/* Vista completa para Admin/Gerente/Estoquista */}
         {!isVendedor && <>
-        {/* Dashboard */}
-        <MenuItem href="/dashboard" label="Dashboard" icon={LayoutDashboard} />
+        <div className="pt-1 pb-1"><p className="px-3 text-xs text-white/30 uppercase tracking-wider">Dashboard</p></div>
+        {menusDashboard.map((m) => <MenuItem key={m.href} {...m} />)}
+
+        <div className="pt-4 pb-1"><p className="px-3 text-xs text-white/30 uppercase tracking-wider">Pessoas</p></div>
+        {menusPessoas.map((m) => <MenuItem key={m.href} {...m} />)}
 
         {/* Grupo Produtos (expansível) */}
         <div>
