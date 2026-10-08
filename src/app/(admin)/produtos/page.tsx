@@ -29,6 +29,7 @@ export default function ProdutosPage() {
   const [produtos, setProdutos] = useState<Produto[]>([]);
   const [grupos, setGrupos] = useState<Grupo[]>([]);
   const [loading, setLoading] = useState(true);
+  const [erro, setErro] = useState("");
   const [toggling, setToggling] = useState<string | null>(null);
 
   const [filtros, setFiltros] = useState({ ...FILTRO_INICIAL });
@@ -39,10 +40,10 @@ export default function ProdutosPage() {
       fetch("/api/produtos").then(r => r.json()),
       fetch("/api/grupos?admin=1").then(r => r.json()),
     ]).then(([prods, grps]) => {
+      if (!Array.isArray(prods) || !Array.isArray(grps)) throw new Error(prods?.erro ?? "Não foi possível carregar os produtos.");
       setProdutos(prods);
       setGrupos(grps);
-      setLoading(false);
-    });
+    }).catch(e => setErro(e instanceof Error ? e.message : "Não foi possível carregar os produtos.")).finally(() => setLoading(false));
   }, []);
 
   async function toggleAtivo(id: string, ativo: boolean) {
@@ -105,6 +106,7 @@ export default function ProdutosPage() {
           Novo Produto
         </Link>
       </div>
+      {erro && <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{erro}</div>}
 
       {/* Filtros */}
       <div className="bg-white rounded-xl border border-gray-200 p-4 mb-4">
