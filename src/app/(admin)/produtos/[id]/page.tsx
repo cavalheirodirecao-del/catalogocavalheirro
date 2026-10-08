@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { Plus, Trash2 } from "lucide-react";
+import Link from "next/link";
 import ImageUpload from "@/components/admin/ImageUpload";
 
 interface GradeItem { id: string; valor: string; ordem: number; }
@@ -29,6 +30,11 @@ export default function EditarProdutoPage() {
       fetch("/api/grupos").then(r => r.json()),
       fetch("/api/grades").then(r => r.json()),
     ]).then(([produto, grps, gds]) => {
+      if (!produto?.id || !Array.isArray(produto.cores)) {
+        setErro(produto?.erro ?? "Este produto não existe ou foi removido.");
+        setForm(null);
+        return;
+      }
       setForm({
         ...produto,
         cores: produto.cores.map((c: any) => ({
@@ -41,7 +47,7 @@ export default function EditarProdutoPage() {
       });
       setGrupos(grps);
       setGrades(gds);
-    }).finally(() => setLoading(false));
+    }).catch(() => setErro("Não foi possível carregar o produto.")).finally(() => setLoading(false));
   }, [id]);
 
   useEffect(() => {
@@ -124,7 +130,7 @@ export default function EditarProdutoPage() {
   }
 
   if (loading) return <div className="text-gray-400 p-8">Carregando...</div>;
-  if (!form) return <div className="text-red-500 p-8">Produto não encontrado.</div>;
+  if (!form) return <div className="p-8 space-y-4"><p className="text-red-600">{erro || "Produto não encontrado."}</p><Link href="/produtos" className="inline-block rounded-lg bg-black px-4 py-2 text-sm text-white">Voltar para produtos</Link></div>;
 
   return (
     <div className="max-w-3xl">
