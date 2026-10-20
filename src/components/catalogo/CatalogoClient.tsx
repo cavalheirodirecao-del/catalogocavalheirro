@@ -853,17 +853,6 @@ function CatalogoInner({ produtos, catalogo, banners, config, vendedorNome, qtdM
 
       <main className="max-w-7xl mx-auto px-4 py-6">
         {catalogo === "VAREJO" && <p className="text-sm mb-5">Conheça nossa coleção de moda masculina. <Link href="/sobre" className="underline">Nossa história</Link> · <Link href="/contato" className="underline">Fale com a Cavalheiro</Link> · <Link href="/atacado" className="underline">Compras no atacado</Link></p>}
-        <VideosColecao produtos={produtos} catalogo={catalogo} pathCatalogo={pathCatalogo} />
-        <div className="flex items-center justify-between mb-4">
-          <p className={`text-sm ${tema.countText}`}>
-            {getFiltroLabel() ? (
-              <>{getFiltroLabel()} · </>
-            ) : null}
-            <span className={`font-medium ${tema.countNumber}`}>{produtosFiltrados.length}</span>{" "}
-            {produtosFiltrados.length === 1 ? "produto" : "produtos"}
-          </p>
-        </div>
-
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4">
           {produtosFiltrados.map((produto) => (
             <ProdutoCard
