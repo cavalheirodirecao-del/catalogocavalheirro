@@ -67,8 +67,9 @@ async function POSTHandler(req: NextRequest) {
     for (const item of plano.plano) {
       const { produto: fonte, grade, existente } = item;
       const ajuste = ajustes[fonte.codigo] ?? {};
-      const produtoGrupoId = ajuste.grupoId || existente?.grupoId || grupoId;
-      const produtoSubGrupoId = ajuste.subGrupoId || existente?.subGrupoId || subGrupoId || null;
+      // Import settings classify only new products; existing products keep their current classification.
+      const produtoGrupoId = existente?.grupoId ?? ajuste.grupoId ?? grupoId;
+      const produtoSubGrupoId = (existente?.subGrupoId ?? ajuste.subGrupoId ?? subGrupoId) || null;
       const precoVarejo = Number.isFinite(ajuste.precoVarejo) ? Number(ajuste.precoVarejo) : (fonte.origem === "VAREJO" ? fonte.precoAtacado : (existente?.precoVarejoVista ?? 0));
       const precoAtacado = Number.isFinite(ajuste.precoAtacado) ? Number(ajuste.precoAtacado) : (fonte.origem === "ATACADO" ? fonte.precoAtacado : (existente?.precoAtacadoVista ?? 0));
       const precoGrandesClientes = Number.isFinite(ajuste.precoGrandesClientes) ? Number(ajuste.precoGrandesClientes) : (existente?.precoFabricaVista ?? (precoAtacado > 0 ? Math.floor(precoAtacado * 0.85) + 0.9 : 0));
