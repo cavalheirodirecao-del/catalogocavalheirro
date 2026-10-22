@@ -94,14 +94,21 @@ async function POSTHandler(req: NextRequest) {
       });
       if (existente) await tx.produto.update({ where: { id: produto.id }, data: { nome: fonte.nome, grupoId: produtoGrupoId, subGrupoId: produtoSubGrupoId, gradeId: gradeAtual.id, precoVarejoVista: precoVarejo, precoVarejoPrazo: precoVarejo, precoAtacadoVista: precoAtacado, precoAtacadoPrazo: precoAtacado, precoFabricaVista: precoGrandesClientes, precoFabricaPrazo: precoGrandesClientes } });
 
+      const coresPorNome = new Map<string, any>((existente?.cores ?? []).map((cor: any) => [cor.nome.trim().toUpperCase(), cor]));
       for (const variacao of fonte.variacoes) {
         const gradeItem = gradeAtual.itens.find((i: { id: string; valor: string }) => i.valor.toUpperCase() === variacao.tamanho);
         if (!gradeItem) throw new Error(`Tamanho ${variacao.tamanho} não encontrado para ${fonte.codigo}.`);
-        let cor = existente?.cores.find((c: any) => c.nome.toUpperCase() === variacao.cor) ?? null;
-        if (!cor) cor = await tx.produtoCor.create({ data: { produtoId: produto.id, nome: variacao.cor } });
-        let variante = existente?.cores.find((c: any) => c.id === cor!.id)?.variantes.find((v: any) => v.gradeItemId === gradeItem.id) ?? null;
+        const nomeCor = variacao.cor.trim().toUpperCase() || "VARIADAS";
+        let cor = coresPorNome.get(nomeCor) ?? null;
+        if (!cor) {
+          cor = await tx.produtoCor.create({ data: { produtoId: produto.id, nome: nomeCor } });
+          coresPorNome.set(nomeCor, cor);
+        }
+        let variante = cor.variantes?.find((v: any) => v.gradeItemId === gradeItem.id) ?? null;
         if (!variante) variante = await tx.produtoVariante.create({ data: { produtoId: produto.id, corId: cor.id, gradeItemId: gradeItem.id } });
-        const estoqueAnterior = existente?.cores.find((c: any) => c.id === cor!.id)?.variantes.find((v: any) => v.id === variante!.id)?.estoque?.quantidade ?? 0;
+        if (!cor.variantes) cor.variantes = [];
+        if (!cor.variantes.some((v: any) => v.id === variante.id)) cor.variantes.push(variante);
+        const estoqueAnterior = variante.estoque?.quantidade ?? 0;
         await tx.estoque.upsert({ where: { varianteId: variante.id }, update: { quantidade: variacao.estoque }, create: { varianteId: variante.id, quantidade: variacao.estoque } });
         if (estoqueAnterior !== variacao.estoque) await tx.movimentacaoEstoque.create({ data: { varianteId: variante.id, tipo: "AJUSTE", quantidade: Math.abs(variacao.estoque - estoqueAnterior), usuarioId, obs: `Importação Faz Agilizar: ${estoqueAnterior} para ${variacao.estoque}` } });
       }
